@@ -112,14 +112,41 @@ public class CsvLoader
 
     private List<string?> ParseLine(string line, char delimiter)
     {
-        return line
-            .Split(delimiter)
-            .Select(cell =>
+        var result = new List<string?>();
+        var inQuotes = false;
+        var current = new StringBuilder();
+        
+        for (int i = 0; i < line.Length; i++)
+        {
+            var ch = line[i];
+            
+            if (ch == '"')
             {
-                var trimmed = cell.Trim();
-                return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
-            })
-            .ToList();
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    current.Append('"');
+                    i++;
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if (ch == delimiter && !inQuotes)
+            {
+                var value = current.ToString().Trim();
+                result.Add(string.IsNullOrWhiteSpace(value) ? null : value);
+                current.Clear();
+            }
+            else
+            {
+                current.Append(ch);
+            }
+        }
+        
+        var lastValue = current.ToString().Trim();
+        result.Add(string.IsNullOrWhiteSpace(lastValue) ? null : lastValue);
+        return result;
     }
 
     private JsonModel ToJsonModel(TableModel table, SchemaModel schema)
