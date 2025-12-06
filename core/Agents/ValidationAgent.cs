@@ -1,10 +1,20 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Tessera.Core.Models;
 
 namespace Tessera.Core.Agents;
 
 public class ValidationAgent
 {
+    private readonly JsonAgent _jsonAgent;
+
+    public ValidationAgent(JsonAgent? jsonAgent = null)
+    {
+        _jsonAgent = jsonAgent ?? new JsonAgent();
+    }
+
     public ValidationResult ValidateCell(SchemaModel schema, int columnIndex, string? value)
     {
         if (columnIndex < 0 || columnIndex >= schema.Columns.Count)
@@ -92,6 +102,107 @@ public class ValidationAgent
         }
 
         return new ValidationReport(errors.Count == 0, errors, normalized);
+    }
+
+    public JsonValidationResult ValidateJsonText(string jsonText, SchemaModel schema)
+    {
+        var parseResult = _jsonAgent.Parse(jsonText);
+        if (!parseResult.IsValid || parseResult.Model is null)
+        {
+            return JsonValidationResult.Failure(parseResult.ErrorMessage ?? "Invalid JSON", JsonValidationErrorType.Syntax, parseResult.LineNumber);
+        }
+
+        return ValidateJsonModel(parseResult.Model, schema);
+    }
+
+    public JsonValidationResult ValidateJsonModel(JsonModel json, SchemaModel schema)
+    {
+        var errors = new List<JsonValidationError>();
+
+        for (var rowIndex = 0; rowIndex < json.Records.Count; rowIndex++)
+        {
+            var record = json.Records[rowIndex];
+            foreach (var column in schema.Columns)
+            {
+                if (!record.TryGetValue(column.Name, out var value))
+                {
+                    errors.Add(new JsonValidationError(rowIndex, $"Missing required key '{column.Name}'.", column.Name, JsonValidationErrorType.MissingKey));
+                    continue;
+                }
+
+                if (value is null)
+                {
+                    if (!column.IsNullable)
+                    {
+                        errors.Add(new JsonValidationError(rowIndex, $"{column.Name} cannot be null.", column.Name, JsonValidationErrorType.NullNotAllowed));
+                    }
+
+                    continue;
+                }
+
+                var compatibility = IsValueCompatibleWithSchema(value, column);
+                if (compatibility is not null)
+                {
+                    errors.Add(new JsonValidationError(rowIndex, compatibility, column.Name, JsonValidationErrorType.TypeMismatch));
+                }
+            }
+
+            foreach (var key in record.Keys)
+            {
+                if (schema.Columns.All(c => c.Name != key))
+                {
+                    errors.Add(new JsonValidationError(rowIndex, $"Unknown key '{key}'.", key, JsonValidationErrorType.UnknownKey));
+                }
+            }
+        }
+
+        return new JsonValidationResult(errors.Count == 0, errors, errors.Count == 0 ? json : null);
+    }
+
+    private static string? IsValueCompatibleWithSchema(object value, ColumnSchema column)
+    {
+        switch (column.Type)
+        {
+            case DataType.String when value is string:
+                return null;
+            case DataType.Bool when value is bool:
+                return null;
+            case DataType.Int:
+                if (value is long)
+                {
+                    return null;
+                }
+
+                if (value is double number)
+                {
+                    if (Math.Abs(number % 1) < double.Epsilon)
+                    {
+                        return null;
+                    }
+
+                    return $"{column.Name} expects an integer.";
+                }
+
+                break;
+            case DataType.Float:
+                if (value is double or long)
+                {
+                    return null;
+                }
+
+                break;
+            case DataType.Date:
+                if (value is string s && DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                {
+                    return null;
+                }
+
+                break;
+            default:
+                return null;
+        }
+
+        return $"{column.Name} is incompatible with schema type {column.Type}.";
     }
 
     private static bool IsWithinRange(double value, ColumnSchema schema)

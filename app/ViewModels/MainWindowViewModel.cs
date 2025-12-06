@@ -4,6 +4,8 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Styling;
 using Tessera.Agents;
+using Tessera.Core.Agents;
+using Tessera.Utils;
 
 namespace Tessera.ViewModels;
 
@@ -12,6 +14,7 @@ public class MainWindowViewModel : ViewModelBase
     private readonly SettingsAgent _settingsAgent = new();
     private readonly UIToastAgent _toastAgent = new();
     private readonly NavigationAgent _navigationAgent = new();
+    private readonly HistoryAgent _historyAgent = new();
 
     private string _currentFileName = "No file opened";
     private WorkspaceStatus _status = WorkspaceStatus.Idle;
@@ -23,9 +26,11 @@ public class MainWindowViewModel : ViewModelBase
         _settingsAgent.ThemeChanged += ApplyTheme;
         _settingsAgent.SetTheme(ThemeVariant.Light);
 
-        _navigationAgent.RegisterView(new TableViewModel());
-        _navigationAgent.RegisterView(new SchemaViewModel());
-        _navigationAgent.RegisterView(new JsonViewModel());
+        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateWorkspace();
+        var dataSync = new DataSyncAgent(table, schema, json, validator, jsonAgent);
+        _navigationAgent.RegisterView(new TableViewModel(dataSync, _historyAgent));
+        _navigationAgent.RegisterView(new SchemaViewModel(dataSync));
+        _navigationAgent.RegisterView(new JsonViewModel(dataSync, validator, jsonAgent, _toastAgent));
         _navigationAgent.ActiveViewChanged += SyncActiveViewState;
 
         SaveCommand = new DelegateCommand(_ => OnSaveRequested());
