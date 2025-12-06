@@ -1,0 +1,154 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Tessera.Core.Models;
+
+namespace Tessera.Core.Agents;
+
+public class DataSyncAgent
+{
+    public DataSyncAgent(TableModel table, SchemaModel schema, JsonModel json)
+    {
+        EnsureTableMatchesSchema(table, schema);
+        Table = table;
+        Schema = schema;
+        Json = json;
+    }
+
+    public TableModel Table { get; private set; }
+
+    public SchemaModel Schema { get; private set; }
+
+    public JsonModel Json { get; private set; }
+
+    public void ApplyTableEdit(TableModel updatedTable)
+    {
+        EnsureTableMatchesSchema(updatedTable, Schema);
+        Table = updatedTable;
+        Json = BuildJsonFromTable(Table, Schema);
+    }
+
+    public void ApplySchemaEdit(SchemaModel updatedSchema)
+    {
+        EnsureSchemaCompatibleWithTable(updatedSchema, Table);
+        Schema = updatedSchema;
+        Json = BuildJsonFromTable(Table, Schema);
+    }
+
+    public void ApplyJsonEdit(JsonModel updatedJson)
+    {
+        var tableFromJson = BuildTableFromJson(updatedJson, Schema);
+        EnsureTableMatchesSchema(tableFromJson, Schema);
+        Json = updatedJson;
+        Table = tableFromJson;
+    }
+
+    private static void EnsureTableMatchesSchema(TableModel table, SchemaModel schema)
+    {
+        if (table.Columns.Count != schema.Columns.Count)
+        {
+            throw new InvalidOperationException("Table columns do not match schema definition.");
+        }
+
+        foreach (var row in table.Rows)
+        {
+            if (row.Cells.Count != table.Columns.Count)
+            {
+                throw new InvalidOperationException("Row does not match table column count.");
+            }
+
+            for (var i = 0; i < row.Cells.Count; i++)
+            {
+                var value = row.Cells[i];
+                if (!IsValueCompatible(value, schema.Columns[i].InferredType))
+                {
+                    throw new InvalidOperationException($"Value '{value}' is incompatible with schema type {schema.Columns[i].InferredType}.");
+                }
+            }
+        }
+    }
+
+    private static void EnsureSchemaCompatibleWithTable(SchemaModel schema, TableModel table)
+    {
+        if (schema.Columns.Count != table.Columns.Count)
+        {
+            throw new InvalidOperationException("Schema must define the same number of columns as the table.");
+        }
+
+        EnsureTableMatchesSchema(table, schema);
+    }
+
+    private static bool IsValueCompatible(string? value, DataType dataType)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        return dataType switch
+        {
+            DataType.Int => int.TryParse(value, out _),
+            DataType.Float => double.TryParse(value, out _),
+            DataType.Bool => bool.TryParse(value, out _),
+            DataType.Date => DateTime.TryParse(value, out _),
+            _ => true
+        };
+    }
+
+    private static JsonModel BuildJsonFromTable(TableModel table, SchemaModel schema)
+    {
+        var records = new List<Dictionary<string, object?>>();
+
+        foreach (var row in table.Rows)
+        {
+            var record = new Dictionary<string, object?>();
+            for (var i = 0; i < table.Columns.Count; i++)
+            {
+                var columnName = table.Columns[i].Name;
+                var schemaColumn = schema.Columns[i];
+                record[columnName] = ConvertValue(row.Cells[i], schemaColumn.InferredType);
+            }
+
+            records.Add(record);
+        }
+
+        return new JsonModel(records);
+    }
+
+    private static TableModel BuildTableFromJson(JsonModel json, SchemaModel schema)
+    {
+        var columns = schema.Columns.Select(c => new ColumnModel(c.Name)).ToList();
+        var rows = new List<RowModel>();
+
+        foreach (var record in json.Records)
+        {
+            var cells = new List<string?>();
+            foreach (var column in schema.Columns)
+            {
+                record.TryGetValue(column.Name, out var value);
+                cells.Add(value?.ToString());
+            }
+
+            rows.Add(new RowModel(cells));
+        }
+
+        return new TableModel(columns, rows);
+    }
+
+    private static object? ConvertValue(string? value, DataType dataType)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return dataType switch
+        {
+            DataType.Int when int.TryParse(value, out var i) => i,
+            DataType.Float when double.TryParse(value, out var d) => d,
+            DataType.Bool when bool.TryParse(value, out var b) => b,
+            DataType.Date when DateTime.TryParse(value, out var dt) => dt,
+            _ => value
+        };
+    }
+}
