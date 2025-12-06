@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Tessera.Views"
+        x:Class="Tessera.Views.MainWindow"
+        Title="Tessera"
+        Width="900" Height="600">
+  <DockPanel>
+    <Border DockPanel.Dock="Left" Background="#1C1F26" Width="180" Padding="12">
+      <StackPanel Spacing="8">
+        <TextBlock Foreground="White" FontSize="20" Text="Tessera"/>
+        <TextBlock Foreground="LightGray" Text="Navigation"/>
+        <Separator/>
+        <TextBlock Foreground="White" Text="Table"/>
+        <TextBlock Foreground="White" Text="Schema"/>
+        <TextBlock Foreground="White" Text="JSON"/>
+      </StackPanel>
+    </Border>
+    <TabControl>
+      <TabItem Header="Table">
+        <views:TableView />
+      </TabItem>
+      <TabItem Header="Schema">
+        <views:SchemaView />
+      </TabItem>
+      <TabItem Header="JSON">
+        <views:JsonView />
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>
