@@ -27,9 +27,9 @@ public class ValidationAgent
         switch (column.InferredType)
         {
             case DataType.Int:
-                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue))
+                if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
                 {
-                    return ValidationResult.Success(intValue.ToString(CultureInfo.InvariantCulture));
+                    return ValidationResult.Success(longValue.ToString(CultureInfo.InvariantCulture));
                 }
 
                 return ValidationResult.Error($"{column.Name} expects an integer.");

@@ -25,6 +25,15 @@ public class HistoryAgent
         return change;
     }
 
+    public void CancelUndo(CellChange change)
+    {
+        if (_redoStack.Count > 0 && _redoStack.Peek().Equals(change))
+        {
+            _redoStack.Pop();
+            _undoStack.Push(change);
+        }
+    }
+
     public CellChange? Redo()
     {
         if (_redoStack.Count == 0)
@@ -35,6 +44,15 @@ public class HistoryAgent
         var change = _redoStack.Pop();
         _undoStack.Push(change);
         return change;
+    }
+
+    public void CancelRedo(CellChange change)
+    {
+        if (_undoStack.Count > 0 && _undoStack.Peek().Equals(change))
+        {
+            _undoStack.Pop();
+            _redoStack.Push(change);
+        }
     }
 }
 

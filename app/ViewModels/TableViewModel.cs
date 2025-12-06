@@ -9,6 +9,7 @@ using Avalonia.Input.Platform;
 using Tessera.Agents;
 using Tessera.Core.Agents;
 using Tessera.Core.Models;
+using Tessera.Utils;
 
 namespace Tessera.ViewModels;
 
@@ -171,13 +172,7 @@ public class TableViewModel : WorkspaceViewModel
             return;
         }
 
-        var rows = text.Split('\n');
-        var parsed = new List<IList<string?>>();
-        foreach (var row in rows)
-        {
-            var values = row.Split(',').Select(v => v.Trim()).Cast<string?>().ToList();
-            parsed.Add(values);
-        }
+        var parsed = ClipboardCsvHelper.Parse(text);
 
         if (_tableViewAgent.TryPaste(SelectedRowIndex, SelectedColumnIndex, parsed, out var error))
         {

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Tessera.Core.Agents;
 using Tessera.Core.Models;
+using Tessera.Utils;
 
 namespace Tessera.Agents;
 
@@ -30,7 +32,7 @@ public class TableViewAgent
     {
         var oldValue = _dataSyncAgent.Table.Rows[rowIndex].Cells[columnIndex];
         var success = _dataSyncAgent.TryUpdateCell(rowIndex, columnIndex, newValue, out normalizedValue, out errorMessage);
-        if (success)
+        if (success && !Equals(oldValue, normalizedValue))
         {
             _historyAgent.Record(new CellChange(rowIndex, columnIndex, oldValue, normalizedValue));
         }
@@ -48,7 +50,14 @@ public class TableViewAgent
             return false;
         }
 
-        _dataSyncAgent.TryUpdateCell(change.RowIndex, change.ColumnIndex, change.OldValue, out _, out _);
+        var success = _dataSyncAgent.TryUpdateCell(change.RowIndex, change.ColumnIndex, change.OldValue, out _, out var validationError);
+        if (!success)
+        {
+            _historyAgent.CancelUndo(change);
+            errorMessage = validationError ?? "Undo failed validation.";
+            return false;
+        }
+
         return true;
     }
 
@@ -62,7 +71,14 @@ public class TableViewAgent
             return false;
         }
 
-        _dataSyncAgent.TryUpdateCell(change.RowIndex, change.ColumnIndex, change.NewValue, out _, out _);
+        var success = _dataSyncAgent.TryUpdateCell(change.RowIndex, change.ColumnIndex, change.NewValue, out _, out var validationError);
+        if (!success)
+        {
+            _historyAgent.CancelRedo(change);
+            errorMessage = validationError ?? "Redo failed validation.";
+            return false;
+        }
+
         return true;
     }
 
@@ -82,23 +98,16 @@ public class TableViewAgent
 
         var orderedRows = new List<int>(lookup.Keys);
         orderedRows.Sort();
-        var lines = new List<string>();
-
-        foreach (var rowIndex in orderedRows)
-        {
-            var cols = lookup[rowIndex];
-            var orderedCols = new List<int>(cols.Keys);
-            orderedCols.Sort();
-            var values = new List<string>();
-            foreach (var colIndex in orderedCols)
+        var values = orderedRows
+            .Select(rowIndex =>
             {
-                values.Add(cols[colIndex] ?? string.Empty);
-            }
+                var columns = lookup[rowIndex];
+                var orderedCols = new List<int>(columns.Keys);
+                orderedCols.Sort();
+                return orderedCols.Select(colIndex => columns[colIndex]).ToList();
+            });
 
-            lines.Add(string.Join(',', values));
-        }
-
-        return string.Join('\n', lines);
+        return ClipboardCsvHelper.Serialize(values);
     }
 
     public bool TryPaste(int startRow, int startColumn, IList<IList<string?>> pastedCells, out string? errorMessage)
