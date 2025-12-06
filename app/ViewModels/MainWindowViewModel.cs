@@ -129,8 +129,8 @@ public class MainWindowViewModel : ViewModelBase
         StatusMessage = "Save requested";
         _toastAgent.ShowToast("Save triggered", ToastLevel.Info);
         SaveRequested?.Invoke();
-        Status = WorkspaceStatus.Idle;
-        StatusMessage = "Idle";
+        // Note: Status should be reset by the save handler when complete
+    }
     }
 
     private void OnReloadRequested()
