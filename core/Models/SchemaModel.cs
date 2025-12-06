@@ -11,28 +11,47 @@ public enum DataType
     Date
 }
 
-public class SchemaColumn
+public class ColumnSchema
 {
-    public SchemaColumn(string name, DataType inferredType, bool isNullable)
+    public ColumnSchema(
+        string name,
+        DataType type,
+        bool isNullable,
+        double? min = null,
+        double? max = null,
+        int distinctCount = 0,
+        List<string?>? sampleValues = null)
     {
         Name = name;
-        InferredType = inferredType;
+        Type = type;
         IsNullable = isNullable;
+        Min = min;
+        Max = max;
+        DistinctCount = distinctCount;
+        SampleValues = sampleValues ?? new List<string?>();
     }
 
-    public string Name { get; }
+    public string Name { get; set; }
 
-    public DataType InferredType { get; }
+    public DataType Type { get; set; }
 
-    public bool IsNullable { get; }
+    public bool IsNullable { get; set; }
+
+    public double? Min { get; set; }
+
+    public double? Max { get; set; }
+
+    public int DistinctCount { get; set; }
+
+    public List<string?> SampleValues { get; }
 }
 
 public class SchemaModel
 {
-    public SchemaModel(List<SchemaColumn> columns)
+    public SchemaModel(List<ColumnSchema> columns)
     {
         Columns = columns;
     }
 
-    public List<SchemaColumn> Columns { get; }
+    public List<ColumnSchema> Columns { get; }
 }

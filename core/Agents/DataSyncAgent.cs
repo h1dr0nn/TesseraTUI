@@ -34,14 +34,6 @@ public class DataSyncAgent
         TableChanged?.Invoke();
     }
 
-    public void ApplySchemaEdit(SchemaModel updatedSchema)
-    {
-        EnsureSchemaCompatibleWithTable(updatedSchema, Table);
-        Schema = updatedSchema;
-        Json = BuildJsonFromTable(Table, Schema);
-        TableChanged?.Invoke();
-    }
-
     public void ApplyJsonEdit(JsonModel updatedJson)
     {
         var tableFromJson = BuildTableFromJson(updatedJson, Schema);
@@ -84,6 +76,42 @@ public class DataSyncAgent
         return true;
     }
 
+    public bool TryUpdateSchema(int columnIndex, ColumnSchema updatedSchema, out ValidationReport report)
+    {
+        report = Validator.ValidateColumn(Table, columnIndex, updatedSchema);
+        if (!report.IsValid)
+        {
+            return false;
+        }
+
+        for (var rowIndex = 0; rowIndex < Table.Rows.Count; rowIndex++)
+        {
+            var row = Table.Rows[rowIndex];
+            row.Cells[columnIndex] = report.NormalizedValues.ElementAtOrDefault(rowIndex);
+        }
+
+        Schema.Columns[columnIndex] = updatedSchema;
+        Json = BuildJsonFromTable(Table, Schema);
+        TableChanged?.Invoke();
+        return true;
+    }
+
+    public bool TryRenameColumn(int columnIndex, string newName, out string? errorMessage)
+    {
+        errorMessage = null;
+        if (columnIndex < 0 || columnIndex >= Schema.Columns.Count)
+        {
+            errorMessage = "Column index is out of range.";
+            return false;
+        }
+
+        Schema.Columns[columnIndex].Name = newName;
+        Table.Columns[columnIndex] = new ColumnModel(newName);
+        Json = BuildJsonFromTable(Table, Schema);
+        TableChanged?.Invoke();
+        return true;
+    }
+
     private static void EnsureTableMatchesSchema(TableModel table, SchemaModel schema)
     {
         if (table.Columns.Count != schema.Columns.Count)
@@ -101,22 +129,12 @@ public class DataSyncAgent
             for (var i = 0; i < row.Cells.Count; i++)
             {
                 var value = row.Cells[i];
-                if (!IsValueCompatible(value, schema.Columns[i].InferredType))
+                if (!IsValueCompatible(value, schema.Columns[i].Type))
                 {
-                    throw new InvalidOperationException($"Value '{value}' is incompatible with schema type {schema.Columns[i].InferredType}.");
+                    throw new InvalidOperationException($"Value '{value}' is incompatible with schema type {schema.Columns[i].Type}.");
                 }
             }
         }
-    }
-
-    private static void EnsureSchemaCompatibleWithTable(SchemaModel schema, TableModel table)
-    {
-        if (schema.Columns.Count != table.Columns.Count)
-        {
-            throw new InvalidOperationException("Schema must define the same number of columns as the table.");
-        }
-
-        EnsureTableMatchesSchema(table, schema);
     }
 
     private static bool IsValueCompatible(string? value, DataType dataType)
@@ -147,7 +165,7 @@ public class DataSyncAgent
             {
                 var columnName = table.Columns[i].Name;
                 var schemaColumn = schema.Columns[i];
-                record[columnName] = ConvertValue(row.Cells[i], schemaColumn.InferredType);
+                record[columnName] = ConvertValue(row.Cells[i], schemaColumn.Type);
             }
 
             records.Add(record);
