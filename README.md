@@ -1,4 +1,4 @@
-# 🎛️ Tessera – CSV Editor  
+# 🎛️ Tessera - CSV Editor  
 A clean, modern, and powerful CSV editor designed for creators, developers, and data-heavy workflows.  
 
 ---
