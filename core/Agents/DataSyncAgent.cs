@@ -30,7 +30,9 @@ public class DataSyncAgent
     {
         EnsureTableMatchesSchema(updatedTable, Schema);
         Table = updatedTable;
-        Json = BuildJsonFromTable(Table, Schema);
+        var updatedCells = new List<string?>(row.Cells);
+        updatedCells[columnIndex] = normalizedValue;
+        Table.Rows[rowIndex] = new RowModel(updatedCells);
         TableChanged?.Invoke();
     }
 
