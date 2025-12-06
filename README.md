@@ -89,4 +89,4 @@ Open an issue on the project’s GitHub — always appreciated.
 
 ---
 
-## ❤️ Built by **h1dr0n**
+Built by **h1dr0n**
