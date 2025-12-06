@@ -1,7 +1,39 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Tessera.Views.SchemaView">
-  <Grid Padding="12">
-    <TextBlock Text="Schema view placeholder" FontSize="18" />
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource PageBackgroundBrush}">
+    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,12" VerticalAlignment="Center">
+      <Border Background="{DynamicResource StrongSurfaceBrush}" Padding="10,6" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
+        <StackPanel Orientation="Vertical" Spacing="2">
+          <TextBlock Text="Active view" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          <TextBlock Text="Schema" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Background="{DynamicResource StrongSurfaceBrush}" Padding="10,6" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
+        <StackPanel Orientation="Vertical" Spacing="2">
+          <TextBlock Text="Status" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="16" BoxShadow="0 8 30 #1A000000">
+      <StackPanel Spacing="12">
+        <TextBlock Text="Schema view" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="Column rules, validation hints, and profiling will render here." Foreground="{DynamicResource TextSecondaryBrush}" />
+        <Border Background="{DynamicResource StrongSurfaceBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Validation Feedback" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource WarningBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="⚠" Foreground="{DynamicResource WarningBrush}" />
+                <TextBlock Text="Warnings and invalid schema inputs will surface with this styling." Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="Schema inference and editing logic arrive in later milestones." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
   </Grid>
 </UserControl>

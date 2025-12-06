@@ -1,6 +1,8 @@
 namespace Tessera.ViewModels;
 
-public class JsonViewModel
+public class JsonViewModel : WorkspaceViewModel
 {
-    public string Title => "JSON";
+    public override string Title => "JSON View";
+
+    public override string Subtitle => "Work directly with JSON format";
 }

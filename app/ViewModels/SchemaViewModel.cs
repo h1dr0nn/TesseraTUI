@@ -1,6 +1,8 @@
 namespace Tessera.ViewModels;
 
-public class SchemaViewModel
+public class SchemaViewModel : WorkspaceViewModel
 {
-    public string Title => "Schema";
+    public override string Title => "Schema View";
+
+    public override string Subtitle => "Define column rules and validation";
 }

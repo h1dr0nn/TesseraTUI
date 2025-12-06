@@ -1,6 +1,8 @@
 namespace Tessera.ViewModels;
 
-public class TableViewModel
+public class TableViewModel : WorkspaceViewModel
 {
-    public string Title => "Table";
+    public override string Title => "Table View";
+
+    public override string Subtitle => "Edit and inspect CSV rows";
 }

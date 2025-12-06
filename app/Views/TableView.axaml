@@ -1,7 +1,39 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Tessera.Views.TableView">
-  <Grid Padding="12">
-    <TextBlock Text="Table view placeholder" FontSize="18" />
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource PageBackgroundBrush}" ColumnDefinitions="*">
+    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,12" VerticalAlignment="Center">
+      <Border Background="{DynamicResource StrongSurfaceBrush}" Padding="10,6" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
+        <StackPanel Orientation="Vertical" Spacing="2">
+          <TextBlock Text="Active file" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          <TextBlock Text="{Binding CurrentFileName}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Background="{DynamicResource StrongSurfaceBrush}" Padding="10,6" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
+        <StackPanel Orientation="Vertical" Spacing="2">
+          <TextBlock Text="Status" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="16" BoxShadow="0 8 30 #1A000000">
+      <StackPanel Spacing="12">
+        <TextBlock Text="Table view" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="A modern grid will appear here. Resize to see smooth transitions." Foreground="{DynamicResource TextSecondaryBrush}" />
+        <Border Background="{DynamicResource StrongSurfaceBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Row preview" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource ErrorBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="⚠" Foreground="{DynamicResource ErrorBrush}" />
+                <TextBlock Text="Invalid inputs will be highlighted here with red borders." Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="Cells, virtualization, and editing logic are implemented in later phases." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
   </Grid>
 </UserControl>
