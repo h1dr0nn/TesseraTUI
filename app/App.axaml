@@ -1,7 +1,71 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Tessera.App">
+             xmlns:anim="clr-namespace:Avalonia.Animation;assembly=Avalonia.Animation"
+             x:Class="Tessera.App"
+             RequestedThemeVariant="Light">
   <Application.Styles>
-    <FluentTheme Mode="Light"/>
+    <FluentTheme />
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <anim:DoubleTransition Property="Opacity" Duration="{DynamicResource TransitionDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ToggleSwitch">
+      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+    </Style>
+    <Style Selector="Border">
+      <Setter Property="CornerRadius" Value="{DynamicResource SurfaceCornerRadius}" />
+    </Style>
   </Application.Styles>
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <Color x:Key="PageBackgroundColor">#F4F6FA</Color>
+          <Color x:Key="SurfaceColor">#FFFFFFFF</Color>
+          <Color x:Key="StrongSurfaceColor">#F6F7FB</Color>
+          <Color x:Key="TextPrimaryColor">#161A23</Color>
+          <Color x:Key="TextSecondaryColor">#4A4F63</Color>
+          <Color x:Key="BorderColor">#E0E6F1</Color>
+          <Color x:Key="AccentColor">#5B8DEF</Color>
+          <Color x:Key="WarningColor">#F6A609</Color>
+          <Color x:Key="ErrorColor">#E45858</Color>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <Color x:Key="PageBackgroundColor">#11141B</Color>
+          <Color x:Key="SurfaceColor">#181C24</Color>
+          <Color x:Key="StrongSurfaceColor">#1F2430</Color>
+          <Color x:Key="TextPrimaryColor">#F4F7FF</Color>
+          <Color x:Key="TextSecondaryColor">#C3C9D6</Color>
+          <Color x:Key="BorderColor">#2B3040</Color>
+          <Color x:Key="AccentColor">#76A8FF</Color>
+          <Color x:Key="WarningColor">#F6C76A</Color>
+          <Color x:Key="ErrorColor">#E26D6D</Color>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+
+      <SolidColorBrush x:Key="PageBackgroundBrush" Color="{DynamicResource PageBackgroundColor}" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
+      <SolidColorBrush x:Key="StrongSurfaceBrush" Color="{DynamicResource StrongSurfaceColor}" />
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
+      <SolidColorBrush x:Key="BorderBrushLight" Color="{DynamicResource BorderColor}" />
+      <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+      <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}" />
+      <SolidColorBrush x:Key="ErrorBrush" Color="{DynamicResource ErrorColor}" />
+
+      <CornerRadius x:Key="SurfaceCornerRadius">8</CornerRadius>
+      <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
+
+      <TimeSpan x:Key="TransitionDuration">0:0:0.16</TimeSpan>
+    </ResourceDictionary>
+  </Application.Resources>
 </Application>
