@@ -1,6 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Tessera.Views.TableView">
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyCommand}" />
+    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteCommand}" />
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
+  </UserControl.KeyBindings>
   <Grid RowDefinitions="Auto,*" Background="{DynamicResource PageBackgroundBrush}" ColumnDefinitions="*">
     <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,12" VerticalAlignment="Center">
       <Border Background="{DynamicResource StrongSurfaceBrush}" Padding="10,6" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
@@ -18,22 +24,31 @@
     </StackPanel>
 
     <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="16" BoxShadow="0 8 30 #1A000000">
-      <StackPanel Spacing="12">
+      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
         <TextBlock Text="Table view" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-        <TextBlock Text="A modern grid will appear here. Resize to see smooth transitions." Foreground="{DynamicResource TextSecondaryBrush}" />
-        <Border Background="{DynamicResource StrongSurfaceBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
-          <StackPanel Spacing="6">
-            <TextBlock Text="Row preview" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-            <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource ErrorBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="⚠" Foreground="{DynamicResource ErrorBrush}" />
-                <TextBlock Text="Invalid inputs will be highlighted here with red borders." Foreground="{DynamicResource TextPrimaryBrush}" />
-              </StackPanel>
-            </Border>
-            <TextBlock Text="Cells, virtualization, and editing logic are implemented in later phases." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
-          </StackPanel>
-        </Border>
-      </StackPanel>
+        <TextBlock Grid.Row="1" Text="Virtualized grid with inline editing, validation, and undo/redo." Foreground="{DynamicResource TextSecondaryBrush}" />
+        <DataGrid x:Name="TableGrid"
+                  Grid.Row="2"
+                  Items="{Binding Rows}"
+                  AutoGenerateColumns="False"
+                  HeadersVisibility="All"
+                  GridLinesVisibility="All"
+                  BorderThickness="1"
+                  BorderBrush="{DynamicResource BorderBrushLight}"
+                  CanUserReorderColumns="False"
+                  CanUserResizeColumns="True"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  IsReadOnly="False"
+                  SelectionUnit="Cell"
+                  AreRowDetailsFrozen="True"
+                  RowHeight="36"
+                  CornerRadius="8"
+                  Background="{DynamicResource StrongSurfaceBrush}"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  SelectionChanged="OnSelectionChanged" />
+      </Grid>
     </Border>
   </Grid>
 </UserControl>
