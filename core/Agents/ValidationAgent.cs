@@ -173,8 +173,13 @@ public class ValidationAgent
                     return null;
                 }
 
-                if (value is double)
+                if (value is double number)
                 {
+                    if (Math.Abs(number % 1) < double.Epsilon)
+                    {
+                        return null;
+                    }
+
                     return $"{column.Name} expects an integer.";
                 }
 

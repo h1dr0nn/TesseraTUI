@@ -14,6 +14,7 @@ public class MainWindowViewModel : ViewModelBase
     private readonly SettingsAgent _settingsAgent = new();
     private readonly UIToastAgent _toastAgent = new();
     private readonly NavigationAgent _navigationAgent = new();
+    private readonly HistoryAgent _historyAgent = new();
 
     private string _currentFileName = "No file opened";
     private WorkspaceStatus _status = WorkspaceStatus.Idle;
@@ -27,7 +28,7 @@ public class MainWindowViewModel : ViewModelBase
 
         var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateWorkspace();
         var dataSync = new DataSyncAgent(table, schema, json, validator, jsonAgent);
-        _navigationAgent.RegisterView(new TableViewModel(dataSync, new HistoryAgent()));
+        _navigationAgent.RegisterView(new TableViewModel(dataSync, _historyAgent));
         _navigationAgent.RegisterView(new SchemaViewModel(dataSync));
         _navigationAgent.RegisterView(new JsonViewModel(dataSync, validator, jsonAgent, _toastAgent));
         _navigationAgent.ActiveViewChanged += SyncActiveViewState;

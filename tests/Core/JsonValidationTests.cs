@@ -59,8 +59,11 @@ public class JsonValidationTests
         var result = validator.ValidateJsonText(json, schema);
 
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.Type == JsonValidationErrorType.MissingKey && e.Key == "Age");
-        Assert.Contains(result.Errors, e => e.Type == JsonValidationErrorType.UnknownKey && e.Key == "Nickname");
+        var missingKeyError = Assert.Single(result.Errors, e => e.Type == JsonValidationErrorType.MissingKey);
+        Assert.Equal("Age", missingKeyError.Key);
+
+        var unknownKeyError = Assert.Single(result.Errors, e => e.Type == JsonValidationErrorType.UnknownKey);
+        Assert.Equal("Nickname", unknownKeyError.Key);
     }
 
     [Fact]

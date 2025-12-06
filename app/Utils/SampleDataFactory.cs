@@ -34,6 +34,8 @@ public static class SampleDataFactory
     {
         var columns = schema.Columns.Select(c => new ColumnModel(c.Name)).ToList();
         var rows = new List<RowModel>();
+        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
         for (var i = 0; i < rowCount; i++)
         {
             rows.Add(new RowModel(new List<string?>
@@ -41,7 +43,7 @@ public static class SampleDataFactory
                 $"Row {i}",
                 (i % 2 == 0).ToString(),
                 (i * 10).ToString(),
-                DateTime.Today.AddDays(i).ToString("yyyy-MM-dd")
+                baseDate.AddDays(i).ToString("yyyy-MM-dd")
             }));
         }
 
