@@ -139,8 +139,8 @@ public class MainWindowViewModel : ViewModelBase
         StatusMessage = "Reload requested";
         _toastAgent.ShowToast("Reload triggered", ToastLevel.Warning);
         ReloadRequested?.Invoke();
-        Status = WorkspaceStatus.Idle;
-        StatusMessage = "Idle";
+        // Note: Status should be reset by the reload handler when complete
+    }
     }
 
     private void SyncActiveViewState(WorkspaceViewModel view)
