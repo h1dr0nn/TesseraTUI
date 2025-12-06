@@ -4,6 +4,8 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Styling;
 using Tessera.Agents;
+using Tessera.Core.Agents;
+using Tessera.Utils;
 
 namespace Tessera.ViewModels;
 
@@ -23,9 +25,11 @@ public class MainWindowViewModel : ViewModelBase
         _settingsAgent.ThemeChanged += ApplyTheme;
         _settingsAgent.SetTheme(ThemeVariant.Light);
 
-        _navigationAgent.RegisterView(new TableViewModel());
-        _navigationAgent.RegisterView(new SchemaViewModel());
-        _navigationAgent.RegisterView(new JsonViewModel());
+        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateWorkspace();
+        var dataSync = new DataSyncAgent(table, schema, json, validator, jsonAgent);
+        _navigationAgent.RegisterView(new TableViewModel(dataSync, new HistoryAgent()));
+        _navigationAgent.RegisterView(new SchemaViewModel(dataSync));
+        _navigationAgent.RegisterView(new JsonViewModel(dataSync, validator, jsonAgent, _toastAgent));
         _navigationAgent.ActiveViewChanged += SyncActiveViewState;
 
         SaveCommand = new DelegateCommand(_ => OnSaveRequested());

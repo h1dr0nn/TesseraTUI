@@ -7,6 +7,7 @@ using System.Windows.Input;
 using Tessera.Agents;
 using Tessera.Core.Agents;
 using Tessera.Core.Models;
+using Tessera.Utils;
 
 namespace Tessera.ViewModels;
 
@@ -15,11 +16,10 @@ public class SchemaViewModel : WorkspaceViewModel
     private readonly UIToastAgent _toastAgent = new();
     private readonly SchemaViewAgent _schemaAgent;
 
-    public SchemaViewModel()
+    public SchemaViewModel(DataSyncAgent? dataSyncAgent = null)
     {
-        var schema = BuildSampleSchema();
-        var table = BuildSampleTable(schema);
-        var dataSync = new DataSyncAgent(table, schema, new JsonModel(new List<Dictionary<string, object?>>()), new ValidationAgent());
+        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateWorkspace();
+        var dataSync = dataSyncAgent ?? new DataSyncAgent(table, schema, json, validator, jsonAgent);
         _schemaAgent = new SchemaViewAgent(dataSync, _toastAgent);
 
         Columns = new ObservableCollection<SchemaColumnViewModel>(
@@ -49,34 +49,6 @@ public class SchemaViewModel : WorkspaceViewModel
         }
     }
 
-    private static TableModel BuildSampleTable(SchemaModel schema)
-    {
-        var columns = schema.Columns.Select(c => new ColumnModel(c.Name)).ToList();
-        var rows = new List<RowModel>();
-        for (var i = 0; i < 10; i++)
-        {
-            rows.Add(new RowModel(new List<string?>
-            {
-                $"Item {i}",
-                (i % 2 == 0).ToString(),
-                (i * 1.5).ToString(),
-                DateTime.Today.AddDays(i).ToString("yyyy-MM-dd")
-            }));
-        }
-
-        return new TableModel(columns, rows);
-    }
-
-    private static SchemaModel BuildSampleSchema()
-    {
-        return new SchemaModel(new List<ColumnSchema>
-        {
-            new("Name", DataType.String, false, distinctCount: 0, sampleValues: new List<string?>{"Item 0", "Item 1"}),
-            new("Active", DataType.Bool, false, distinctCount: 2, sampleValues: new List<string?>{"true", "false"}),
-            new("Score", DataType.Float, false, 0, 1000, sampleValues: new List<string?>{"0", "1.5"}),
-            new("Date", DataType.Date, true, sampleValues: new List<string?>{DateTime.Today.ToString("yyyy-MM-dd")})
-        });
-    }
 }
 
 public class SchemaColumnViewModel : ViewModelBase

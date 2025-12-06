@@ -11,6 +11,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.1.0" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.0" />
     <PackageReference Include="Avalonia.ReactiveUI" Version="11.1.0" />
+    <PackageReference Include="AvaloniaEdit" Version="11.1.0" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="**\*.axaml" />

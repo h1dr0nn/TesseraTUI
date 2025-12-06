@@ -7,13 +7,22 @@ namespace Tessera.Core.Agents;
 
 public class DataSyncAgent
 {
-    public DataSyncAgent(TableModel table, SchemaModel schema, JsonModel json, ValidationAgent? validationAgent = null)
+    private readonly JsonAgent _jsonAgent;
+
+    public DataSyncAgent(
+        TableModel table,
+        SchemaModel schema,
+        JsonModel json,
+        ValidationAgent? validationAgent = null,
+        JsonAgent? jsonAgent = null)
     {
+        _jsonAgent = jsonAgent ?? new JsonAgent();
+        Validator = validationAgent ?? new ValidationAgent(_jsonAgent);
+
         EnsureTableMatchesSchema(table, schema);
         Table = table;
         Schema = schema;
-        Json = json;
-        Validator = validationAgent ?? new ValidationAgent();
+        Json = json.Records.Count > 0 ? json : _jsonAgent.BuildJsonFromTable(table, schema);
     }
 
     public TableModel Table { get; private set; }
@@ -30,17 +39,37 @@ public class DataSyncAgent
     {
         EnsureTableMatchesSchema(updatedTable, Schema);
         Table = updatedTable;
-        Json = BuildJsonFromTable(Table, Schema);
+        Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
     }
 
     public void ApplyJsonEdit(JsonModel updatedJson)
     {
-        var tableFromJson = BuildTableFromJson(updatedJson, Schema);
+        var validation = Validator.ValidateJsonModel(updatedJson, Schema);
+        if (!validation.IsValid)
+        {
+            throw new InvalidOperationException("JSON payload failed validation against schema.");
+        }
+
+        var tableFromJson = _jsonAgent.BuildTableFromJson(updatedJson, Schema);
         EnsureTableMatchesSchema(tableFromJson, Schema);
         Json = updatedJson;
         Table = tableFromJson;
         TableChanged?.Invoke();
+    }
+
+    public bool TryApplyJson(JsonModel updatedJson, out JsonDiffResult diff, out JsonValidationResult validation)
+    {
+        validation = Validator.ValidateJsonModel(updatedJson, Schema);
+        if (!validation.IsValid)
+        {
+            diff = JsonDiffResult.Empty;
+            return false;
+        }
+
+        diff = _jsonAgent.BuildDiff(Json, updatedJson, Schema);
+        ApplyJsonEdit(updatedJson);
+        return true;
     }
 
     public bool TryUpdateCell(int rowIndex, int columnIndex, string? newValue, out string? normalizedValue, out string? errorMessage)
@@ -71,7 +100,7 @@ public class DataSyncAgent
         }
 
         row.Cells[columnIndex] = normalizedValue;
-        Json = BuildJsonFromTable(Table, Schema);
+        Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
         return true;
     }
@@ -91,7 +120,7 @@ public class DataSyncAgent
         }
 
         Schema.Columns[columnIndex] = updatedSchema;
-        Json = BuildJsonFromTable(Table, Schema);
+        Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
         return true;
     }
@@ -107,7 +136,7 @@ public class DataSyncAgent
 
         Schema.Columns[columnIndex].Name = newName;
         Table.Columns[columnIndex] = new ColumnModel(newName);
-        Json = BuildJsonFromTable(Table, Schema);
+        Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
         return true;
     }
@@ -154,60 +183,4 @@ public class DataSyncAgent
         };
     }
 
-    private static JsonModel BuildJsonFromTable(TableModel table, SchemaModel schema)
-    {
-        var records = new List<Dictionary<string, object?>>();
-
-        foreach (var row in table.Rows)
-        {
-            var record = new Dictionary<string, object?>();
-            for (var i = 0; i < table.Columns.Count; i++)
-            {
-                var columnName = table.Columns[i].Name;
-                var schemaColumn = schema.Columns[i];
-                record[columnName] = ConvertValue(row.Cells[i], schemaColumn.Type);
-            }
-
-            records.Add(record);
-        }
-
-        return new JsonModel(records);
-    }
-
-    private static TableModel BuildTableFromJson(JsonModel json, SchemaModel schema)
-    {
-        var columns = schema.Columns.Select(c => new ColumnModel(c.Name)).ToList();
-        var rows = new List<RowModel>();
-
-        foreach (var record in json.Records)
-        {
-            var cells = new List<string?>();
-            foreach (var column in schema.Columns)
-            {
-                record.TryGetValue(column.Name, out var value);
-                cells.Add(value?.ToString());
-            }
-
-            rows.Add(new RowModel(cells));
-        }
-
-        return new TableModel(columns, rows);
-    }
-
-    private static object? ConvertValue(string? value, DataType dataType)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        return dataType switch
-        {
-            DataType.Int when int.TryParse(value, out var i) => i,
-            DataType.Float when double.TryParse(value, out var d) => d,
-            DataType.Bool when bool.TryParse(value, out var b) => b,
-            DataType.Date when DateTime.TryParse(value, out var dt) => dt,
-            _ => value
-        };
-    }
 }
