@@ -155,7 +155,50 @@ These plug into the DataSyncAgent without breaking existing flows.
 
 ---
 
-## 6. Summary
+## 6. Commit Naming Convention
+
+To keep the history clean and consistent, Tessera follows a simple structured commit style.
+
+### 6.1. Format
+
+`type(scope): short description`
+
+- `type` = category of change  
+- `scope` = the module/agent affected  
+- `short description` = imperative, concise, lowercase
+
+**Examples:**
+- `feat(core): add unified data core models`
+- `feat(ui-table): implement basic table view editing`
+- `fix(validation): prevent invalid json from being applied`
+- `refactor(agents): split datasync logic`
+- `chore(repo): init solution structure`
+- `test(core): add schema inference tests`
+
+---
+
+### 6.2. Allowed Types
+
+- `feat` — new feature  
+- `fix` — bug fix  
+- `refactor` — internal code changes  
+- `perf` — performance improvement  
+- `test` — unit/integration tests  
+- `chore` — repo maintenance, configs, tools  
+- `docs` — documentation updates  
+
+---
+
+### 6.3. Example Scopes
+
+- `core`, `schema`, `table`, `json`, `validation`  
+- `ui-table`, `ui-schema`, `ui-json`, `navigation`  
+- `agents`, `datasync`, `io-csv`, `io-json`  
+- `build`, `package`, `unity`, `ci`
+
+---
+
+## 7. Summary
 
 Tessera’s agent architecture ensures the editor is:
 
