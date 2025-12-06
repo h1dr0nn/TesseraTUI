@@ -87,22 +87,27 @@ public class CsvLoader
             return new SchemaColumn(name, DataType.String, true);
         }
 
-        if (nonNullValues.All(IsBool))
+        var allBool = nonNullValues.All(IsBool);
+        var allInt = nonNullValues.All(IsInt);
+        var allFloat = nonNullValues.All(IsFloat);
+        var allDate = nonNullValues.All(IsDate);
+
+        if (allBool)
         {
             return new SchemaColumn(name, DataType.Bool, isNullable);
         }
 
-        if (nonNullValues.All(IsInt))
+        if (allInt)
         {
             return new SchemaColumn(name, DataType.Int, isNullable);
         }
 
-        if (nonNullValues.All(IsFloat))
+        if (allFloat && !allInt)
         {
             return new SchemaColumn(name, DataType.Float, isNullable);
         }
 
-        if (nonNullValues.All(IsDate))
+        if (allDate)
         {
             return new SchemaColumn(name, DataType.Date, isNullable);
         }
@@ -112,41 +117,14 @@ public class CsvLoader
 
     private List<string?> ParseLine(string line, char delimiter)
     {
-        var result = new List<string?>();
-        var inQuotes = false;
-        var current = new StringBuilder();
-        
-        for (int i = 0; i < line.Length; i++)
-        {
-            var ch = line[i];
-            
-            if (ch == '"')
+        return line
+            .Split(delimiter)
+            .Select(cell =>
             {
-                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
-                {
-                    current.Append('"');
-                    i++;
-                }
-                else
-                {
-                    inQuotes = !inQuotes;
-                }
-            }
-            else if (ch == delimiter && !inQuotes)
-            {
-                var value = current.ToString().Trim();
-                result.Add(string.IsNullOrWhiteSpace(value) ? null : value);
-                current.Clear();
-            }
-            else
-            {
-                current.Append(ch);
-            }
-        }
-        
-        var lastValue = current.ToString().Trim();
-        result.Add(string.IsNullOrWhiteSpace(lastValue) ? null : lastValue);
-        return result;
+                var trimmed = cell.Trim();
+                return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+            })
+            .ToList();
     }
 
     private JsonModel ToJsonModel(TableModel table, SchemaModel schema)

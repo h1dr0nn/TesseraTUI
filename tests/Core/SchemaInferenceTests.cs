@@ -27,4 +27,21 @@ public class SchemaInferenceTests
         Assert.True(schema.Columns[1].IsNullable);
         Assert.Equal(DataType.Bool, schema.Columns[2].InferredType);
     }
+
+    [Fact]
+    public void PrefersIntegersOverFloatsWhenAllValuesWhole()
+    {
+        var columns = new List<ColumnModel> { new("Count") };
+        var rows = new List<RowModel>
+        {
+            new(new List<string?> { "10" }),
+            new(new List<string?> { "20" })
+        };
+
+        var table = new TableModel(columns, rows);
+        var loader = new CsvLoader();
+        var schema = loader.InferSchema(table);
+
+        Assert.Equal(DataType.Int, schema.Columns[0].InferredType);
+    }
 }
