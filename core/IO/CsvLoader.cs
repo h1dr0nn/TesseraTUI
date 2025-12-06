@@ -90,7 +90,7 @@ public class CsvLoader
                 var columnName = table.Columns[i].Name;
                 var schemaColumn = schema.Columns.ElementAtOrDefault(i);
                 var value = i < row.Cells.Count ? row.Cells[i] : null;
-                record[columnName] = schemaColumn == null ? value : ParseByType(value, schemaColumn.InferredType);
+                record[columnName] = schemaColumn == null ? value : ParseByType(value, schemaColumn.Type);
             }
 
             records.Add(record);
