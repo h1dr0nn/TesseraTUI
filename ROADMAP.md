@@ -135,8 +135,6 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**, featuring a
 - [ ] Tối ưu start-up time.
 - [ ] Publish GitHub Release + changelog.
 
-*(Đây là bản đầu tiên đủ tính năng để dùng thật.)*
-
 ---
 
 ### 🧮 **Phase 8 — Formula Engine (Basic)**
@@ -149,6 +147,12 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**, featuring a
 - [ ] Recalc khi cell thay đổi.
 - [ ] Circular detection đơn giản.
 - [ ] View preview kết quả ngay trong Table.
+- [ ] Tách phần tính toán nặng sang module Rust tăng tốc:
+  - [ ] Create `Tessera.Native` (Rust)
+  - [ ] Export basic formula functions (FFI)
+  - [ ] C# wrapper trong Unified Data Core
+  - [ ] Benchmark hiệu năng so với C# thuần
+- [ ] Fallback gracefully nếu module native không chạy.
 
 ---
 
@@ -157,6 +161,10 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**, featuring a
 **Status: Pending**
 
 - [ ] Convert Unified Data Core thành package dùng được trong Unity.
+- [ ] Build riêng module Rust (`Tessera.Native`) cho Unity:
+  - [ ] Windows `.dll`
+  - [ ] macOS `.dylib`
+  - [ ] Linux `.so`
 - [ ] Tạo `/UnityTessera/package.json`.
 - [ ] Unity EditorWindow có:
   - Table View
@@ -164,6 +172,8 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**, featuring a
   - JSON View
 - [ ] Import CSV → ScriptableObject theo schema.
 - [ ] Validate CSV khi build.
+- [ ] Đồng bộ loại dữ liệu & schema từ editor sang runtime.
+- [ ] Cho phép custom validator của Unity hook vào ValidationAgent.
 
 ---
 
@@ -173,11 +183,16 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**, featuring a
 
 - [ ] Plugin architecture.
 - [ ] Macro / automation.
-- [ ] Advanced formulas & functions.
+- [ ] Advanced formulas & built-in functions (Rust-accelerated).
+- [ ] Mở rộng native module:
+  - [ ] diff engine
+  - [ ] search/indexing engine
+  - [ ] vectorized numeric ops
 - [ ] Export thêm: SQL, Parquet, Markdown.
 - [ ] Cloud sync schema (optional).
-- [ ] CLI hỗ trợ convert CSV ↔ JSON ↔ schema.
+- [ ] CLI hỗ trợ convert CSV ↔ JSON ↔ schema (reuse Unified Data Core + Rust module).
 - [ ] Template system cho game data pipelines.
+- [ ] Workspace: lưu nhiều bảng + schema + liên kết (multi-table projects).
 
 ---
 
