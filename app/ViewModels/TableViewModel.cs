@@ -128,11 +128,11 @@ public class TableViewModel : WorkspaceViewModel
 
     private static SchemaModel BuildSampleSchema()
     {
-        return new SchemaModel(new List<SchemaColumn>
+        return new SchemaModel(new List<ColumnSchema>
         {
             new("Name", DataType.String, false),
             new("Active", DataType.Bool, false),
-            new("Score", DataType.Int, false),
+            new("Score", DataType.Int, false, 0, 5000),
             new("Date", DataType.Date, false)
         });
     }

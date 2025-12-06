@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Tessera.Core.Agents;
 using Tessera.Core.Models;
 
 namespace Tessera.Core.IO;
@@ -29,7 +30,7 @@ public class CsvLoader
         if (lines.Count == 0)
         {
             var emptyTable = new TableModel(new List<ColumnModel>(), new List<RowModel>());
-            var emptySchema = new SchemaModel(new List<SchemaColumn>());
+            var emptySchema = new SchemaModel(new List<ColumnSchema>());
             return (emptyTable, emptySchema, new JsonModel(new List<Dictionary<string, object?>>()));
         }
 
@@ -45,7 +46,8 @@ public class CsvLoader
         }
 
         var table = new TableModel(columns, rows);
-        var schema = InferSchema(table);
+        var schemaAgent = new SchemaAgent();
+        var schema = schemaAgent.InferSchema(table);
         var json = ToJsonModel(table, schema);
 
         return (table, schema, json);
@@ -53,18 +55,8 @@ public class CsvLoader
 
     public SchemaModel InferSchema(TableModel table)
     {
-        var columns = new List<SchemaColumn>();
-
-        for (var i = 0; i < table.Columns.Count; i++)
-        {
-            var values = table.Rows
-                .Select(r => i < r.Cells.Count ? r.Cells[i] : null)
-                .ToList();
-
-            columns.Add(InferColumn(table.Columns[i].Name, values));
-        }
-
-        return new SchemaModel(columns);
+        var agent = new SchemaAgent();
+        return agent.InferSchema(table);
     }
 
     public char DetectDelimiter(string sample)
@@ -72,47 +64,6 @@ public class CsvLoader
         var commaCount = sample.Count(c => c == ',');
         var semicolonCount = sample.Count(c => c == ';');
         return semicolonCount > commaCount ? ';' : ',';
-    }
-
-    private SchemaColumn InferColumn(string name, List<string?> values)
-    {
-        var nonNullValues = values
-            .Where(v => !string.IsNullOrWhiteSpace(v))
-            .ToList();
-
-        var isNullable = values.Any(string.IsNullOrWhiteSpace);
-
-        if (nonNullValues.Count == 0)
-        {
-            return new SchemaColumn(name, DataType.String, true);
-        }
-
-        var allBool = nonNullValues.All(IsBool);
-        var allInt = nonNullValues.All(IsInt);
-        var allFloat = nonNullValues.All(IsFloat);
-        var allDate = nonNullValues.All(IsDate);
-
-        if (allBool)
-        {
-            return new SchemaColumn(name, DataType.Bool, isNullable);
-        }
-
-        if (allInt)
-        {
-            return new SchemaColumn(name, DataType.Int, isNullable);
-        }
-
-        if (allFloat && !allInt)
-        {
-            return new SchemaColumn(name, DataType.Float, isNullable);
-        }
-
-        if (allDate)
-        {
-            return new SchemaColumn(name, DataType.Date, isNullable);
-        }
-
-        return new SchemaColumn(name, DataType.String, isNullable);
     }
 
     private List<string?> ParseLine(string line, char delimiter)
@@ -164,12 +115,4 @@ public class CsvLoader
             _ => value
         };
     }
-
-    private bool IsBool(string value) => bool.TryParse(value, out _);
-
-    private bool IsInt(string value) => int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
-
-    private bool IsFloat(string value) => double.TryParse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out _);
-
-    private bool IsDate(string value) => DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 }

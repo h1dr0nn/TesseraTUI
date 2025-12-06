@@ -22,10 +22,12 @@ public class SchemaInferenceTests
         var loader = new CsvLoader();
         var schema = loader.InferSchema(table);
 
-        Assert.Equal(DataType.Int, schema.Columns[0].InferredType);
-        Assert.Equal(DataType.Float, schema.Columns[1].InferredType);
+        Assert.Equal(DataType.Int, schema.Columns[0].Type);
+        Assert.Equal(DataType.Float, schema.Columns[1].Type);
         Assert.True(schema.Columns[1].IsNullable);
-        Assert.Equal(DataType.Bool, schema.Columns[2].InferredType);
+        Assert.Equal(DataType.Bool, schema.Columns[2].Type);
+        Assert.Equal(3, schema.Columns[0].DistinctCount);
+        Assert.Contains("10.5", schema.Columns[1].SampleValues);
     }
 
     [Fact]
@@ -42,6 +44,6 @@ public class SchemaInferenceTests
         var loader = new CsvLoader();
         var schema = loader.InferSchema(table);
 
-        Assert.Equal(DataType.Int, schema.Columns[0].InferredType);
+        Assert.Equal(DataType.Int, schema.Columns[0].Type);
     }
 }

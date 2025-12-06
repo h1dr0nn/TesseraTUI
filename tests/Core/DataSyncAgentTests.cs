@@ -11,7 +11,7 @@ public class DataSyncAgentTests
     [Fact]
     public void RejectsTableUpdatesThatBreakSchema()
     {
-        var schema = new SchemaModel(new List<SchemaColumn> { new("Id", DataType.Int, false) });
+        var schema = new SchemaModel(new List<ColumnSchema> { new("Id", DataType.Int, false) });
         var initialTable = new TableModel(new List<ColumnModel> { new("Id") }, new List<RowModel> { new(new List<string?> { "1" }) });
         var json = new JsonModel(new List<Dictionary<string, object?>>());
         var agent = new DataSyncAgent(initialTable, schema, json);
@@ -24,7 +24,7 @@ public class DataSyncAgentTests
     [Fact]
     public void UpdatesTableFromJsonWhenValid()
     {
-        var schemaColumns = new List<SchemaColumn> { new("Name", DataType.String, false), new("Active", DataType.Bool, false) };
+        var schemaColumns = new List<ColumnSchema> { new("Name", DataType.String, false), new("Active", DataType.Bool, false) };
         var schema = new SchemaModel(schemaColumns);
         var initialTable = new TableModel(
             new List<ColumnModel> { new("Name"), new("Active") },
