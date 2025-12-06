@@ -7,12 +7,13 @@ namespace Tessera.Core.Agents;
 
 public class DataSyncAgent
 {
-    public DataSyncAgent(TableModel table, SchemaModel schema, JsonModel json)
+    public DataSyncAgent(TableModel table, SchemaModel schema, JsonModel json, ValidationAgent? validationAgent = null)
     {
         EnsureTableMatchesSchema(table, schema);
         Table = table;
         Schema = schema;
         Json = json;
+        Validator = validationAgent ?? new ValidationAgent();
     }
 
     public TableModel Table { get; private set; }
@@ -21,11 +22,18 @@ public class DataSyncAgent
 
     public JsonModel Json { get; private set; }
 
+    public ValidationAgent Validator { get; }
+
+    public event Action? TableChanged;
+
     public void ApplyTableEdit(TableModel updatedTable)
     {
         EnsureTableMatchesSchema(updatedTable, Schema);
         Table = updatedTable;
-        Json = BuildJsonFromTable(Table, Schema);
+        var updatedCells = new List<string?>(row.Cells);
+        updatedCells[columnIndex] = normalizedValue;
+        Table.Rows[rowIndex] = new RowModel(updatedCells);
+        TableChanged?.Invoke();
     }
 
     public void ApplySchemaEdit(SchemaModel updatedSchema)
@@ -33,6 +41,7 @@ public class DataSyncAgent
         EnsureSchemaCompatibleWithTable(updatedSchema, Table);
         Schema = updatedSchema;
         Json = BuildJsonFromTable(Table, Schema);
+        TableChanged?.Invoke();
     }
 
     public void ApplyJsonEdit(JsonModel updatedJson)
@@ -41,6 +50,40 @@ public class DataSyncAgent
         EnsureTableMatchesSchema(tableFromJson, Schema);
         Json = updatedJson;
         Table = tableFromJson;
+        TableChanged?.Invoke();
+    }
+
+    public bool TryUpdateCell(int rowIndex, int columnIndex, string? newValue, out string? normalizedValue, out string? errorMessage)
+    {
+        normalizedValue = newValue;
+        errorMessage = null;
+
+        if (rowIndex < 0 || rowIndex >= Table.Rows.Count)
+        {
+            errorMessage = "Row index is out of range.";
+            return false;
+        }
+
+        var validation = Validator.ValidateCell(Schema, columnIndex, newValue);
+        if (!validation.IsValid)
+        {
+            errorMessage = validation.Message;
+            return false;
+        }
+
+        normalizedValue = validation.NormalizedValue;
+
+        var row = Table.Rows[rowIndex];
+        if (columnIndex < 0 || columnIndex >= row.Cells.Count)
+        {
+            errorMessage = "Column index is out of range.";
+            return false;
+        }
+
+        row.Cells[columnIndex] = normalizedValue;
+        Json = BuildJsonFromTable(Table, Schema);
+        TableChanged?.Invoke();
+        return true;
     }
 
     private static void EnsureTableMatchesSchema(TableModel table, SchemaModel schema)
