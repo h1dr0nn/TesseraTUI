@@ -20,14 +20,13 @@ public class TableViewModel : WorkspaceViewModel
     private int _selectedRowIndex;
     private int _selectedColumnIndex;
 
-    public TableViewModel()
+    public TableViewModel(DataSyncAgent? dataSyncAgent = null, HistoryAgent? historyAgent = null)
     {
-        var sampleSchema = BuildSampleSchema();
-        var sampleTable = BuildSampleTable(sampleSchema);
-        var validationAgent = new ValidationAgent();
-        var dataSync = new DataSyncAgent(sampleTable, sampleSchema, new JsonModel(new List<Dictionary<string, object?>>()), validationAgent);
-        var history = new HistoryAgent();
-        _tableViewAgent = new TableViewAgent(dataSync, history);
+        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateWorkspace();
+        var sync = dataSyncAgent ?? new DataSyncAgent(table, schema, json, validator, jsonAgent);
+        var history = historyAgent ?? new HistoryAgent();
+
+        _tableViewAgent = new TableViewAgent(sync, history);
         _tableViewAgent.TableChanged += SyncFromModel;
 
         Columns = new ObservableCollection<TableColumnViewModel>(
@@ -72,15 +71,16 @@ public class TableViewModel : WorkspaceViewModel
 
     public void SyncFromModel()
     {
-        for (var rowIndex = 0; rowIndex < Rows.Count; rowIndex++)
+        Rows.Clear();
+        foreach (var rowModel in _tableViewAgent.Table.Rows.Select((r, i) => (Model: r, Index: i)))
         {
-            var rowModel = _tableViewAgent.Table.Rows[rowIndex];
-            var row = Rows[rowIndex];
-            for (var colIndex = 0; colIndex < row.Cells.Count; colIndex++)
+            var cells = new List<TableCellViewModel>();
+            for (var colIndex = 0; colIndex < _tableViewAgent.Table.Columns.Count; colIndex++)
             {
-                row.Cells[colIndex].RefreshValue(rowModel.Cells[colIndex]);
-                row.Cells[colIndex].ClearError();
+                cells.Add(new TableCellViewModel(_tableViewAgent, rowModel.Index, colIndex, rowModel.Model.Cells[colIndex]));
             }
+
+            Rows.Add(new TableRowViewModel(rowModel.Index, new ObservableCollection<TableCellViewModel>(cells)));
         }
     }
 
@@ -106,35 +106,6 @@ public class TableViewModel : WorkspaceViewModel
         }
 
         return rows;
-    }
-
-    private static TableModel BuildSampleTable(SchemaModel schema)
-    {
-        var columns = schema.Columns.Select(c => new ColumnModel(c.Name)).ToList();
-        var rows = new List<RowModel>();
-        for (var i = 0; i < 200; i++)
-        {
-            rows.Add(new RowModel(new List<string?>
-            {
-                $"Row {i}",
-                (i % 2 == 0).ToString(),
-                (i * 10).ToString(),
-                DateTime.Today.AddDays(i).ToString("yyyy-MM-dd")
-            }));
-        }
-
-        return new TableModel(columns, rows);
-    }
-
-    private static SchemaModel BuildSampleSchema()
-    {
-        return new SchemaModel(new List<ColumnSchema>
-        {
-            new("Name", DataType.String, false),
-            new("Active", DataType.Bool, false),
-            new("Score", DataType.Int, false, 0, 5000),
-            new("Date", DataType.Date, false)
-        });
     }
 
     private async Task CopyAsync()

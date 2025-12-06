@@ -1,6 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:anim="clr-namespace:Avalonia.Animation;assembly=Avalonia.Animation"
+             xmlns:utils="clr-namespace:Tessera.Utils"
              x:Class="Tessera.App"
              RequestedThemeVariant="Light">
   <Application.Styles>
@@ -66,6 +67,7 @@
       <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
 
       <TimeSpan x:Key="TransitionDuration">0:0:0.16</TimeSpan>
+      <utils:InverseBoolConverter x:Key="InverseBoolConverter" />
     </ResourceDictionary>
   </Application.Resources>
 </Application>
