@@ -1,0 +1,116 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             xmlns:utils="clr-namespace:Tessera.Utils"
+             xmlns:vm="clr-namespace:Tessera.ViewModels"
+             xmlns:controls="clr-namespace:Tessera.Controls"
+             x:Class="Tessera.Views.Editors.TableView">
+
+  <UserControl.Resources>
+    <utils:StringToDoubleConverter x:Key="StringToDoubleConverter"/>
+    <utils:IntToDoubleOrNanConverter x:Key="IntToDoubleOrNanConverter"/>
+  </UserControl.Resources>
+
+  <UserControl.KeyBindings>
+    <!-- Clipboard & History (Ctrl for Windows/Linux, Cmd for Mac) -->
+    <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyCommand}" />
+    <KeyBinding Gesture="Cmd+C" Command="{Binding CopyCommand}" />
+    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteCommand}" />
+    <KeyBinding Gesture="Cmd+V" Command="{Binding PasteCommand}" />
+    <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
+    <KeyBinding Gesture="Cmd+Z" Command="{Binding UndoCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Cmd+Shift+Z" Command="{Binding RedoCommand}" />
+    
+    <!-- Selection -->
+    <KeyBinding Gesture="Ctrl+A" Command="{Binding SelectAllCommand}" />
+    <KeyBinding Gesture="Cmd+A" Command="{Binding SelectAllCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding ClearSelectionCommand}" />
+    <KeyBinding Gesture="Delete" Command="{Binding ClearCellsCommand}" />
+    <KeyBinding Gesture="Back" Command="{Binding ClearCellsCommand}" />
+    <KeyBinding Gesture="Shift+Space" Command="{Binding SelectRowCommand}" />
+    <KeyBinding Gesture="Ctrl+Space" Command="{Binding SelectColumnCommand}" />
+    <KeyBinding Gesture="Cmd+Space" Command="{Binding SelectColumnCommand}" />
+  </UserControl.KeyBindings>
+
+  <Grid Margin="24">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            Padding="0" 
+            ClipToBounds="True" 
+            BorderBrush="{DynamicResource BorderBrushLight}" 
+            BorderThickness="1"
+            MinHeight="200">
+      
+      <!-- Use custom SpreadsheetGrid instead of DataGrid -->
+      <controls:SpreadsheetGrid x:Name="GridControl">
+        <controls:SpreadsheetGrid.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="Copy" Command="{Binding CopyCommand}" InputGesture="Ctrl+C">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-content-copy" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Paste" Command="{Binding PasteCommand}" InputGesture="Ctrl+V">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-content-paste" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Clear Cells" Command="{Binding ClearCellsCommand}" InputGesture="Delete">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-eraser" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Add Row" Command="{Binding AddRowCommand}">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-table-row-plus-after" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Add Column" Command="{Binding AddColumnCommand}">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-table-column-plus-after" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Insert Row Above" Command="{Binding InsertRowAboveCommand}">
+              <MenuItem.Icon><i:Icon Value="mdi-table-row-plus-before" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Insert Row Below" Command="{Binding InsertRowBelowCommand}">
+              <MenuItem.Icon><i:Icon Value="mdi-table-row-plus-after" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Insert Column Left" Command="{Binding InsertColumnLeftCommand}">
+              <MenuItem.Icon><i:Icon Value="mdi-table-column-plus-before" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Insert Column Right" Command="{Binding InsertColumnRightCommand}">
+              <MenuItem.Icon><i:Icon Value="mdi-table-column-plus-after" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Delete Row" Command="{Binding DeleteRowCommand}">
+              <MenuItem.Icon><i:Icon Value="mdi-table-row-remove" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Delete Column" Command="{Binding DeleteColumnCommand}">
+              <MenuItem.Icon><i:Icon Value="mdi-table-column-remove" /></MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Undo" Command="{Binding UndoCommand}" InputGesture="Ctrl+Z">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-undo" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Redo" Command="{Binding RedoCommand}" InputGesture="Ctrl+Shift+Z">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-redo" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Select All" Command="{Binding SelectAllCommand}" InputGesture="Ctrl+A">
+              <MenuItem.Icon>
+                <i:Icon Value="mdi-select-all" />
+              </MenuItem.Icon>
+            </MenuItem>
+          </ContextMenu>
+        </controls:SpreadsheetGrid.ContextMenu>
+      </controls:SpreadsheetGrid>
+    </Border>
+  </Grid>
+</UserControl>

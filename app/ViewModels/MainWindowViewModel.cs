@@ -3,9 +3,15 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Styling;
+using Avalonia.Media;
+using Avalonia.Threading;
 using Tessera.Agents;
 using Tessera.Core.Agents;
 using Tessera.Utils;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using Tessera.Core.Models;
 
 namespace Tessera.ViewModels;
 
@@ -19,23 +25,47 @@ public class MainWindowViewModel : ViewModelBase
     private string _currentFileName = "No file opened";
     private WorkspaceStatus _status = WorkspaceStatus.Idle;
     private string _statusMessage = "Idle";
-    private bool _isDarkMode;
+    private bool _isSettingsOpen;
+    private DispatcherTimer? _autoSaveTimer;
+    private string _currentFilePath = "";
+
+    public FileExplorerViewModel FileExplorer { get; }
+    public SettingsViewModel SettingsViewModel { get; }
+    
+    public TableViewModel TableViewModel { get; }
+    public SchemaViewModel SchemaViewModel { get; }
+    public JsonViewModel JsonViewModel { get; }
 
     public MainWindowViewModel()
     {
         _settingsAgent.ThemeChanged += ApplyTheme;
         _settingsAgent.SetTheme(ThemeVariant.Light);
 
-        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateWorkspace();
-        var dataSync = new DataSyncAgent(table, schema, json, validator, jsonAgent);
-        _navigationAgent.RegisterView(new TableViewModel(dataSync, _historyAgent));
-        _navigationAgent.RegisterView(new SchemaViewModel(dataSync));
-        _navigationAgent.RegisterView(new JsonViewModel(dataSync, validator, jsonAgent, _toastAgent));
+        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateEmptyWorkspace();
+        _dataSyncAgent = new DataSyncAgent(table, schema, json, validator, jsonAgent);
+        
+        TableViewModel = new TableViewModel(_settingsAgent, _dataSyncAgent, _historyAgent);
+        SchemaViewModel = new SchemaViewModel(_dataSyncAgent);
+        JsonViewModel = new JsonViewModel(_dataSyncAgent, validator, jsonAgent, _toastAgent);
+
+        _navigationAgent.RegisterView(TableViewModel);
+        _navigationAgent.RegisterView(SchemaViewModel);
+        _navigationAgent.RegisterView(JsonViewModel);
         _navigationAgent.ActiveViewChanged += SyncActiveViewState;
 
-        SaveCommand = new DelegateCommand(_ => OnSaveRequested());
+        // Initialize Child ViewModels
+        FileExplorer = new FileExplorerViewModel();
+        FileExplorer.FileSelected += OnFileSelected;
+
+        SettingsViewModel = new SettingsViewModel(_settingsAgent);
+
+        SaveCommand = new DelegateCommand(_ => SaveFile());
         ReloadCommand = new DelegateCommand(_ => OnReloadRequested());
-        ToggleThemeCommand = new DelegateCommand(_ => IsDarkMode = !IsDarkMode);
+        ToggleSettingsCommand = new DelegateCommand(_ => IsSettingsOpen = !IsSettingsOpen);
+        ToggleViewCommand = new DelegateCommand(param => 
+        {
+            if (param is WorkspaceViewModel view) ToggleView(view);
+        });
     }
 
     public ObservableCollection<WorkspaceViewModel> Views => _navigationAgent.Views;
@@ -44,6 +74,12 @@ public class MainWindowViewModel : ViewModelBase
     {
         get => _navigationAgent.ActiveView;
         set => _navigationAgent.ActiveView = value;
+    }
+
+    public bool IsSettingsOpen
+    {
+        get => _isSettingsOpen;
+        set => SetProperty(ref _isSettingsOpen, value);
     }
 
     public string CurrentFileName
@@ -68,6 +104,7 @@ public class MainWindowViewModel : ViewModelBase
         {
             if (SetProperty(ref _status, value))
             {
+                RaisePropertyChanged(nameof(StatusBrush));
                 foreach (var view in Views)
                 {
                     view.Status = value;
@@ -75,6 +112,13 @@ public class MainWindowViewModel : ViewModelBase
             }
         }
     }
+
+    public IBrush StatusBrush => Status switch
+    {
+        WorkspaceStatus.Editing => new SolidColorBrush(Color.Parse("#E9C46A")), // Warning/Editing
+        WorkspaceStatus.Error => new SolidColorBrush(Color.Parse("#E76F51")),   // Error
+        _ => new SolidColorBrush(Color.Parse("#2A9D8F"))                        // Accent/Idle
+    };
 
     public string StatusMessage
     {
@@ -91,24 +135,12 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public bool IsDarkMode
-    {
-        get => _isDarkMode;
-        set
-        {
-            if (SetProperty(ref _isDarkMode, value))
-            {
-                var variant = value ? ThemeVariant.Dark : ThemeVariant.Light;
-                _settingsAgent.SetTheme(variant);
-            }
-        }
-    }
+    public ICommand ToggleSettingsCommand { get; }
+    public ICommand ToggleViewCommand { get; }
 
     public ICommand SaveCommand { get; }
 
     public ICommand ReloadCommand { get; }
-
-    public ICommand ToggleThemeCommand { get; }
 
     public UIToastAgent ToastAgent => _toastAgent;
 
@@ -116,27 +148,158 @@ public class MainWindowViewModel : ViewModelBase
 
     public NavigationAgent Navigation => _navigationAgent;
 
-    public event Action? SaveRequested;
-
     public event Action? ReloadRequested;
 
-    private void ApplyTheme(ThemeVariant variant)
+    private string _fileTextContent = "No file loaded.";
+    public string FileTextContent
     {
-        if (Application.Current is { } app)
+        get => _fileTextContent;
+        set => SetProperty(ref _fileTextContent, value);
+    }
+
+    private readonly DataSyncAgent _dataSyncAgent;
+
+    private void OnFileSelected(string path)
+    {
+        _currentFilePath = path;
+        CurrentFileName = Path.GetFileName(path);
+        
+        try 
         {
-            app.RequestedThemeVariant = variant;
+            if (File.Exists(path))
+            {
+                var text = File.ReadAllText(path);
+                FileTextContent = text;
+                RaisePropertyChanged(nameof(FileTextContent));
+
+                // Parse CSV
+                var rows = ClipboardCsvHelper.Parse(text, _settingsAgent.DelimiterChar);
+                
+                if (rows.Count > 0)
+                {
+                    // Assume first row is header
+                    var headerRow = rows[0];
+
+                    
+                    var dataRows = rows.Skip(1).ToList();
+
+                    var columns = new List<ColumnModel>();
+                    var columnSchemas = new List<ColumnSchema>();
+
+                    for (int i = 0; i < headerRow.Count; i++)
+                    {
+                        var header = headerRow[i] ?? $"Column {i + 1}";
+                        columns.Add(new ColumnModel(header));
+                        
+                        // Infer Data Type
+                        var inferredType = InferColumnType(dataRows, i);
+                        columnSchemas.Add(new ColumnSchema(header, inferredType, true)); 
+                    }
+
+                    var tableRows = new List<RowModel>();
+                    foreach (var row in dataRows)
+                    {
+                        // Ensure row has correct number of cells
+                        var cells = new List<string?>(row);
+                        while (cells.Count < columns.Count) cells.Add(null);
+                        while (cells.Count > columns.Count) cells.RemoveAt(cells.Count - 1);
+                        
+                        tableRows.Add(new RowModel(cells));
+                    }
+                    
+                    var tableModel = new TableModel(columns, tableRows);
+                    // SchemaModel(columns) - no name in constructor
+                    var schemaModel = new SchemaModel(columnSchemas);
+
+                    _dataSyncAgent.LoadNewData(tableModel, schemaModel);
+                    _dataSyncAgent.TableChanged += OnTableChanged;
+                    _toastAgent.ShowToast($"Opened {CurrentFileName}", ToastLevel.Success);
+                }
+                else
+                {
+                     _toastAgent.ShowToast("File is empty", ToastLevel.Warning);
+                }
+            }
         }
+        catch (Exception ex)
+        {
+            FileTextContent = $"Error reading file: {ex.Message}";
+            RaisePropertyChanged(nameof(FileTextContent));
+            _toastAgent.ShowToast($"Error opening file: {ex.Message}", ToastLevel.Error);
+        }
+    }
+
+    private void OnTableChanged()
+    {
+        if (_settingsAgent.AutoSave)
+        {
+            _autoSaveTimer?.Stop();
+            _autoSaveTimer = new DispatcherTimer(TimeSpan.FromSeconds(2), DispatcherPriority.Background, (s, e) => 
+            {
+                _autoSaveTimer?.Stop();
+                SaveFile(true);
+            });
+            _autoSaveTimer.Start();
+        }
+    }
+
+    private void SaveFile(bool isAutoSave = false)
+    {
+        if (string.IsNullOrEmpty(_currentFilePath) || !File.Exists(_currentFilePath))
+        {
+            if (!isAutoSave) _toastAgent.ShowToast("No file to save", ToastLevel.Warning);
+            return;
+        }
+
+        try
+        {
+            Status = WorkspaceStatus.Editing;
+            StatusMessage = isAutoSave ? "Auto Saving..." : "Saving...";
+
+            if (ActiveView is null)
+            {
+                // Save Plain Text content directly
+                File.WriteAllText(_currentFilePath, FileTextContent);
+            }
+            else
+            {
+                // Save from Table Model
+                var headers = _dataSyncAgent.Table.Columns.Select(c => c.Name).ToList();
+                var rows = _dataSyncAgent.Table.Rows.Select(r => r.Cells).ToList();
+                
+                // Combine headers and rows
+                var allData = new List<IEnumerable<string?>> { headers };
+                allData.AddRange(rows);
+
+                var csvContent = ClipboardCsvHelper.Serialize(allData, _settingsAgent.DelimiterChar);
+                File.WriteAllText(_currentFilePath, csvContent);
+                
+                // Ensure Plain Text view is updated
+                FileTextContent = csvContent;
+            }
+
+            Status = WorkspaceStatus.Idle;
+            StatusMessage = "Saved";
+            if (!isAutoSave) _toastAgent.ShowToast("File saved", ToastLevel.Success);
+        }
+        catch (Exception ex)
+        {
+            Status = WorkspaceStatus.Error;
+            StatusMessage = "Save Failed";
+            _toastAgent.ShowToast($"Save failed: {ex.Message}", ToastLevel.Error);
+        }
+    }
+    
+    public void ToggleView(WorkspaceViewModel view)
+    {
+        _navigationAgent.ToggleView(view);
     }
 
     private void OnSaveRequested()
     {
-        Status = WorkspaceStatus.Editing;
-        StatusMessage = "Save requested";
-        _toastAgent.ShowToast("Save triggered", ToastLevel.Info);
-        SaveRequested?.Invoke();
-        // Note: Status should be reset by the save handler when complete
+        SaveFile();
     }
-    }
+
 
     private void OnReloadRequested()
     {
@@ -146,12 +309,59 @@ public class MainWindowViewModel : ViewModelBase
         ReloadRequested?.Invoke();
         // Note: Status should be reset by the reload handler when complete
     }
-    }
+
 
     private void SyncActiveViewState(WorkspaceViewModel view)
     {
         view.CurrentFileName = CurrentFileName;
         view.Status = Status;
         view.StatusMessage = StatusMessage;
+        
+        // CRITICAL: Notify view that ActiveView has changed!
+        RaisePropertyChanged(nameof(ActiveView));
+    }
+
+    private void ApplyTheme(ThemeVariant variant)
+    {
+        if (Application.Current is { } app)
+        {
+            app.RequestedThemeVariant = variant;
+        }
+    }
+
+    private DataType InferColumnType(IEnumerable<IList<string?>> rows, int colIndex)
+    {
+        bool canBeInt = true;
+        bool canBeFloat = true;
+        bool canBeBool = true;
+        bool canBeDate = true;
+        bool hasValues = false;
+
+        foreach (var row in rows)
+        {
+            if (colIndex >= row.Count) continue;
+            
+            var val = row[colIndex];
+            if (string.IsNullOrWhiteSpace(val)) continue;
+
+            hasValues = true;
+
+            if (canBeInt && !int.TryParse(val, out _)) canBeInt = false;
+            if (canBeFloat && !double.TryParse(val, out _)) canBeFloat = false;
+            if (canBeBool && !bool.TryParse(val, out _)) canBeBool = false;
+            if (canBeDate && !DateTime.TryParse(val, out _)) canBeDate = false;
+
+            // Short circuit if everything failed
+            if (!canBeInt && !canBeFloat && !canBeBool && !canBeDate) return DataType.String;
+        }
+
+        if (!hasValues) return DataType.String; // Default to string if empty
+
+        if (canBeInt) return DataType.Int;
+        if (canBeFloat) return DataType.Float;
+        if (canBeBool) return DataType.Bool;
+        if (canBeDate) return DataType.Date;
+
+        return DataType.String;
     }
 }

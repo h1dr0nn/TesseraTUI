@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             x:Class="Tessera.Views.Editors.JsonView">
+  <Grid Background="{DynamicResource PageBackgroundBrush}">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Grid Grid.Row="1" ColumnDefinitions="4*,*">
+        <Border Background="{DynamicResource SurfaceBrush}" Padding="0" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1" ClipToBounds="True">
+           <Grid RowDefinitions="*,Auto">
+            <ae:TextEditor Name="JsonEditor"
+                           ShowLineNumbers="True"
+                           FontFamily="Consolas,Menlo,monospace"
+                           Background="{DynamicResource SurfaceBrush}"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           BorderThickness="0"
+                           Margin="0"
+                           BorderBrush="{DynamicResource BorderBrushLight}" />
+            
+            <Border Grid.Row="1" Background="{DynamicResource StrongSurfaceBrush}" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="12,8">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <Ellipse Width="8" Height="8" Fill="{Binding IsValid, Converter={StaticResource BoolToColorConverter}}" />
+                  <TextBlock Text="{Binding ValidationMessage}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"/>
+                  <TextBlock Text="Format invalid" Foreground="{DynamicResource ErrorBrush}" IsVisible="{Binding CanApply, Converter={StaticResource InverseBoolConverter}}" FontSize="12" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+           </Grid>
+        </Border>
+
+        <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" Margin="12,0,0,0" Padding="16" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1">
+          <Grid RowDefinitions="Auto,*">
+            <TextBlock Text="Validation Issues" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+            <ScrollViewer Grid.Row="1">
+                <ItemsControl ItemsSource="{Binding Warnings}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Padding="8" Margin="0,0,0,8" Background="{DynamicResource StrongSurfaceBrush}" CornerRadius="4">
+                          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <i:Icon Value="mdi-alert-circle" FontSize="16" Foreground="{DynamicResource WarningBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding .}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"/>
+                          </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+      </Grid>
+
+      <Border Grid.RowSpan="2" Background="#88000000" IsVisible="{Binding IsDiffOpen}">
+        <Border Width="480" Background="{DynamicResource SurfaceBrush}" Padding="20" CornerRadius="4" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center" BoxShadow="0 8 30 #22000000">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Diff preview" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="Review changes before committing to the table" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Border Background="#1933AA55" Padding="8" CornerRadius="8">
+                <StackPanel>
+                  <TextBlock Text="Added" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding DiffPreview.AddedRows.Count}" FontWeight="Bold" />
+                </StackPanel>
+              </Border>
+              <Border Background="#19AA3333" Padding="8" CornerRadius="8">
+                <StackPanel>
+                  <TextBlock Text="Removed" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding DiffPreview.RemovedRows.Count}" FontWeight="Bold" />
+                </StackPanel>
+              </Border>
+              <Border Background="#19EECC33" Padding="8" CornerRadius="8">
+                <StackPanel>
+                  <TextBlock Text="Modified" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding DiffPreview.ModifiedRows.Count}" FontWeight="Bold" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding DiffPreview.KeyMismatches}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Foreground="{DynamicResource WarningBrush}" Text="{Binding Key}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+
+            </ItemsControl>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+              <Button Content="Cancel" Command="{Binding ResetCommand}" Padding="12,6" />
+              <Button Content="Commit" Command="{Binding ConfirmApplyCommand}" Padding="12,6" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

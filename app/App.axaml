@@ -1,73 +1,209 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:anim="clr-namespace:Avalonia.Animation;assembly=Avalonia.Animation"
              xmlns:utils="clr-namespace:Tessera.Utils"
+             xmlns:agents="clr-namespace:Tessera.Agents"
+             xmlns:sys="clr-namespace:System;assembly=netstandard"
              x:Class="Tessera.App"
              RequestedThemeVariant="Light">
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+    <!-- Button Styles -->
     <Style Selector="Button">
       <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
-      <Setter Property="Padding" Value="10,6" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="FontWeight" Value="Regular" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Background" Value="{DynamicResource StrongSurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushLight}" />
+      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Transitions">
         <Transitions>
-          <anim:DoubleTransition Property="Opacity" Duration="{DynamicResource TransitionDuration}" />
+          <BrushTransition Property="Background" Duration="{DynamicResource TransitionDuration}" />
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource TransitionDuration}" />
         </Transitions>
       </Setter>
     </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushStrong}" />
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource BorderBrushLight}" />
+    </Style>
+    
+    <!-- TextBox Styles -->
+    <Style Selector="TextBox">
+      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushLight}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- ComboBox Styles -->
+    <Style Selector="ComboBox">
+      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    </Style>
+
+    <!-- ToggleSwitch Styles -->
     <Style Selector="ToggleSwitch">
       <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
     </Style>
-    <Style Selector="TabItem">
-      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+    
+    <!-- Toggle/Active Button Style -->
+    <!-- Toggle/Active Button Style -->
+    <Style Selector="Button.view-switcher">
+        <Setter Property="Background" Value="{DynamicResource StrongSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushLight}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="Border">
+    <Style Selector="Button.view-switcher:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.active">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="Button.active:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.active:pressed /template/ ContentPresenter">
+        <Setter Property="Opacity" Value="0.8" />
+    </Style>
+    
+    <!-- Ensure Paths inside Buttons inherit Foreground -->
+    <Style Selector="Button Path">
+        <Setter Property="Fill" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    
+    <!-- Robust Selector for Active Icon Color -->
+    <Style Selector="Button.active Path">
+        <Setter Property="Fill" Value="{DynamicResource AccentForegroundBrush}" />
+    </Style>
+    <!-- Explicitly target view-switcher active paths to beat any specificity issues -->
+    <Style Selector="Button.view-switcher.active Path">
+        <Setter Property="Fill" Value="{DynamicResource AccentForegroundBrush}" />
+    </Style>
+
+    <!-- Card Styles -->
+    <Style Selector="Border.card">
       <Setter Property="CornerRadius" Value="{DynamicResource SurfaceCornerRadius}" />
+      <Setter Property="BoxShadow" Value="0 0 0 transparent" />
     </Style>
   </Application.Styles>
 
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.ThemeDictionaries>
+        <!-- VS Code-inspired Light Theme -->
         <ResourceDictionary x:Key="Light">
-          <Color x:Key="PageBackgroundColor">#F4F6FA</Color>
-          <Color x:Key="SurfaceColor">#FFFFFFFF</Color>
-          <Color x:Key="StrongSurfaceColor">#F6F7FB</Color>
-          <Color x:Key="TextPrimaryColor">#161A23</Color>
-          <Color x:Key="TextSecondaryColor">#4A4F63</Color>
-          <Color x:Key="BorderColor">#E0E6F1</Color>
-          <Color x:Key="AccentColor">#5B8DEF</Color>
-          <Color x:Key="WarningColor">#F6A609</Color>
-          <Color x:Key="ErrorColor">#E45858</Color>
+          <Color x:Key="PageBackgroundColor">#FFFFFF</Color>
+          <Color x:Key="SurfaceColor">#FFFFFF</Color>
+          <Color x:Key="StrongSurfaceColor">#F3F3F3</Color>
+          <Color x:Key="TextPrimaryColor">#3B3B3B</Color>
+          <Color x:Key="TextSecondaryColor">#6C6C6C</Color>
+          <Color x:Key="BorderColor">#E5E5E5</Color>
+          <Color x:Key="BorderColorStrong">#D4D4D4</Color>
+          <Color x:Key="AccentColor">#007ACC</Color>
+          <Color x:Key="HoverColor">#E8E8E8</Color>
+          <Color x:Key="WarningColor">#F59E0B</Color>
+          <Color x:Key="ErrorColor">#EF4444</Color>
+          <Color x:Key="SuccessColor">#10B981</Color>
+          <Color x:Key="AccentForegroundColor">#FFFFFF</Color>
         </ResourceDictionary>
+        <!-- VS Code-inspired Dark Theme -->
         <ResourceDictionary x:Key="Dark">
-          <Color x:Key="PageBackgroundColor">#11141B</Color>
-          <Color x:Key="SurfaceColor">#181C24</Color>
-          <Color x:Key="StrongSurfaceColor">#1F2430</Color>
-          <Color x:Key="TextPrimaryColor">#F4F7FF</Color>
-          <Color x:Key="TextSecondaryColor">#C3C9D6</Color>
-          <Color x:Key="BorderColor">#2B3040</Color>
-          <Color x:Key="AccentColor">#76A8FF</Color>
-          <Color x:Key="WarningColor">#F6C76A</Color>
-          <Color x:Key="ErrorColor">#E26D6D</Color>
+          <Color x:Key="PageBackgroundColor">#1E1E1E</Color>
+          <Color x:Key="SurfaceColor">#1E1E1E</Color>
+          <Color x:Key="StrongSurfaceColor">#2D2D30</Color>
+          <Color x:Key="TextPrimaryColor">#CCCCCC</Color>
+          <Color x:Key="TextSecondaryColor">#A8A8A8</Color>
+          <Color x:Key="BorderColor">#3E3E42</Color>
+          <Color x:Key="BorderColorStrong">#474747</Color>
+          <Color x:Key="AccentColor">#0E639C</Color>
+          <Color x:Key="HoverColor">#2A2D2E</Color>
+          <Color x:Key="WarningColor">#FBBF24</Color>
+          <Color x:Key="ErrorColor">#F87171</Color>
+          <Color x:Key="SuccessColor">#34D399</Color>
+          <Color x:Key="AccentForegroundColor">#FFFFFF</Color>
+        </ResourceDictionary>
+        <!-- High Contrast Dark Theme -->
+        <ResourceDictionary x:Key="{x:Static agents:SettingsAgent.HighContrastDark}">
+          <Color x:Key="PageBackgroundColor">#000000</Color>
+          <Color x:Key="SurfaceColor">#000000</Color>
+          <Color x:Key="StrongSurfaceColor">#000000</Color>
+          <Color x:Key="TextPrimaryColor">#FFFFFF</Color>
+          <Color x:Key="TextSecondaryColor">#FFFFFF</Color>
+          <Color x:Key="BorderColor">#FFFFFF</Color>
+          <Color x:Key="BorderColorStrong">#FFFFFF</Color>
+          <Color x:Key="AccentColor">#FFFF00</Color>
+          <Color x:Key="HoverColor">#333333</Color>
+          <Color x:Key="WarningColor">#FFFF00</Color>
+          <Color x:Key="ErrorColor">#FF0000</Color>
+          <Color x:Key="SuccessColor">#00FF00</Color>
+          <Color x:Key="AccentForegroundColor">#000000</Color>
+        </ResourceDictionary>
+        <!-- High Contrast Light Theme -->
+        <ResourceDictionary x:Key="{x:Static agents:SettingsAgent.HighContrastLight}">
+          <Color x:Key="PageBackgroundColor">#FFFFFF</Color>
+          <Color x:Key="SurfaceColor">#FFFFFF</Color>
+          <Color x:Key="StrongSurfaceColor">#FFFFFF</Color>
+          <Color x:Key="TextPrimaryColor">#000000</Color>
+          <Color x:Key="TextSecondaryColor">#000000</Color>
+          <Color x:Key="BorderColor">#000000</Color>
+          <Color x:Key="BorderColorStrong">#000000</Color>
+          <Color x:Key="AccentColor">#00008B</Color>
+          <Color x:Key="HoverColor">#E0E0E0</Color>
+          <Color x:Key="WarningColor">#FF8C00</Color>
+          <Color x:Key="ErrorColor">#B00020</Color>
+          <Color x:Key="SuccessColor">#006400</Color>
+          <Color x:Key="AccentForegroundColor">#FFFFFF</Color>
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 
+      <!-- Color Brushes -->
       <SolidColorBrush x:Key="PageBackgroundBrush" Color="{DynamicResource PageBackgroundColor}" />
       <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
       <SolidColorBrush x:Key="StrongSurfaceBrush" Color="{DynamicResource StrongSurfaceColor}" />
       <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
       <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
       <SolidColorBrush x:Key="BorderBrushLight" Color="{DynamicResource BorderColor}" />
+      <SolidColorBrush x:Key="BorderBrushStrong" Color="{DynamicResource BorderColorStrong}" />
       <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+      <SolidColorBrush x:Key="AccentForegroundBrush" Color="{DynamicResource AccentForegroundColor}" />
+      <SolidColorBrush x:Key="HoverBrush" Color="{DynamicResource HoverColor}" />
       <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}" />
       <SolidColorBrush x:Key="ErrorBrush" Color="{DynamicResource ErrorColor}" />
+      <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}" />
 
-      <CornerRadius x:Key="SurfaceCornerRadius">8</CornerRadius>
-      <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
-
-      <TimeSpan x:Key="TransitionDuration">0:0:0.16</TimeSpan>
+      <!-- Design Tokens -->
+      <CornerRadius x:Key="SurfaceCornerRadius">0</CornerRadius>
+      <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+      <sys:TimeSpan x:Key="TransitionDuration">0:0:0.15</sys:TimeSpan>
+      
+      <!-- Converters -->
       <utils:InverseBoolConverter x:Key="InverseBoolConverter" />
+      <utils:BoolToColorConverter x:Key="BoolToColorConverter" />
+      <utils:TitleToIconConverter x:Key="TitleToIconConverter" />
+      <utils:StringToDoubleConverter x:Key="StringToDoubleConverter" />
+      <utils:BoolToTextWrappingConverter x:Key="BoolToTextWrappingConverter" />
     </ResourceDictionary>
   </Application.Resources>
 </Application>

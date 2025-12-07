@@ -218,9 +218,9 @@ public class JsonAgent
     }
 }
 
-public record JsonParseResult(bool IsValid, JsonModel? Model, string? ErrorMessage, int? LineNumber)
+public record JsonParseResult(bool IsValid, JsonModel? Model, string? ErrorMessage, long? LineNumber)
 {
     public static JsonParseResult Success(JsonModel model) => new(true, model, null, null);
 
-    public static JsonParseResult Failure(string message, int? lineNumber = null) => new(false, null, message, lineNumber);
+    public static JsonParseResult Failure(string message, long? lineNumber = null) => new(false, null, message, lineNumber);
 }

@@ -16,6 +16,8 @@ public abstract class WorkspaceViewModel : ViewModelBase
 
     public abstract string Title { get; }
 
+    public abstract string IconName { get; }
+
     public virtual string Subtitle => "";
 
     public string CurrentFileName

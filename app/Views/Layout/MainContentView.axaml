@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:editors="clr-namespace:Tessera.Views.Editors"
+             xmlns:settings="clr-namespace:Tessera.Views.Settings"
+             xmlns:vm="clr-namespace:Tessera.ViewModels"
+             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Tessera.Views.Layout.MainContentView">
+             
+    <Border Background="{DynamicResource SurfaceBrush}" Margin="0">
+       <Grid RowDefinitions="Auto,*">
+           <!-- Top Toolbar with View Tabs -->
+           <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="24,12,24,12" IsVisible="{Binding !IsSettingsOpen}">
+              <!-- View Tabs (Icons) -->
+              <ItemsControl Grid.Column="0" ItemsSource="{Binding Navigation.Views}" HorizontalAlignment="Left" VerticalAlignment="Center">
+                 <ItemsControl.ItemsPanel>
+                   <ItemsPanelTemplate>
+                     <StackPanel Orientation="Horizontal" Spacing="4" />
+                   </ItemsPanelTemplate>
+                 </ItemsControl.ItemsPanel>
+                 <ItemsControl.ItemTemplate>
+                   <DataTemplate>
+                      <Button Command="{Binding $parent[Window].DataContext.ToggleViewCommand}"
+                              CommandParameter="{Binding}"
+                              Classes="view-switcher"
+                              Classes.active="{Binding IsSelected}"
+                              CornerRadius="6"
+                              Width="32" Height="32"
+                              Padding="0"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Center"
+                              ToolTip.Tip="{Binding Title}">
+                          <i:Icon Value="{Binding IconName}" FontSize="16"/>
+                      </Button>
+                   </DataTemplate>
+                 </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- Action Buttons -->
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                 <!-- Table Actions -->
+                 <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding TableViewModel.IsSelected}">
+                     <Button Content="Add Row" Command="{Binding TableViewModel.AddRowCommand}" />
+                     <Button Content="Add Column" Command="{Binding TableViewModel.AddColumnCommand}" />
+                 </StackPanel>
+
+                 <!-- Schema Actions -->
+                 <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding SchemaViewModel.IsSelected}">
+                     <Button Content="Add Field" Command="{Binding SchemaViewModel.AddFieldCommand}" />
+                     <Button Content="Validate Schema" Command="{Binding SchemaViewModel.ValidateCommand}" />
+                 </StackPanel>
+
+                 <!-- JSON Actions -->
+                 <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding JsonViewModel.IsSelected}">
+                     <Button Content="Format" Command="{Binding JsonViewModel.FormatCommand}" />
+                     <Button Content="Apply" Command="{Binding JsonViewModel.ApplyChangesCommand}" IsEnabled="{Binding JsonViewModel.CanApply}" Classes="accent"/>
+                 </StackPanel>
+
+                 <Button Content="Save" Command="{Binding SaveCommand}" Classes="accent" Padding="12,6"/>
+              </StackPanel>
+           </Grid>
+                      <Border Grid.Row="1" 
+                    BorderBrush="{DynamicResource BorderBrushLight}" 
+                    BorderThickness="1" 
+                    CornerRadius="4"
+                    Margin="24,0,24,24"
+                    ClipToBounds="True"
+                    IsVisible="{Binding !IsSettingsOpen}">
+              <Panel Grid.Row="1">
+                <!-- Plain Text View (Fallback when no active view selected) -->
+                <TextBox Text="{Binding FileTextContent}" 
+                         IsVisible="{Binding Navigation.ActiveView, Converter={x:Static ObjectConverters.IsNull}}"
+                         IsReadOnly="False" 
+                         FontFamily="Consolas,Menlo,monospace" 
+                         FontSize="{Binding SettingsViewModel.FontSize, Converter={StaticResource StringToDoubleConverter}}" 
+                         Background="Transparent" 
+                         BorderThickness="0" 
+                         Padding="16"
+                         AcceptsReturn="True"
+                         TextWrapping="{Binding SettingsViewModel.WordWrap, Converter={StaticResource BoolToTextWrappingConverter}}" />
+
+                <!-- Normal Views (Table/Schema/JSON) - shown when ActiveView is set -->
+                <ContentControl Content="{Binding Navigation.ActiveView}" 
+                                IsVisible="{Binding Navigation.ActiveView, Converter={x:Static ObjectConverters.IsNotNull}}" 
+                                Background="{DynamicResource SurfaceBrush}">
+                  <ContentControl.DataTemplates>
+                     <DataTemplate DataType="vm:TableViewModel">
+                        <editors:TableView />
+                     </DataTemplate>
+                     <DataTemplate DataType="vm:SchemaViewModel">
+                        <editors:SchemaView />
+                     </DataTemplate>
+                     <DataTemplate DataType="vm:JsonViewModel">
+                        <editors:JsonView />
+                     </DataTemplate>
+                  </ContentControl.DataTemplates>
+                </ContentControl>
+            </Panel>
+            </Border>
+            
+            <!-- Settings Content - no outline -->
+            <ScrollViewer Grid.Row="1" IsVisible="{Binding IsSettingsOpen}">
+                <settings:SettingsView DataContext="{Binding SettingsViewModel}" />
+            </ScrollViewer>
+       </Grid>
+     </Border>
+</UserControl>

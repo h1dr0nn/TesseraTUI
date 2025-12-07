@@ -18,9 +18,10 @@ public class SchemaViewModel : WorkspaceViewModel
 
     public SchemaViewModel(DataSyncAgent? dataSyncAgent = null)
     {
-        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateWorkspace();
+        var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateEmptyWorkspace();
         var dataSync = dataSyncAgent ?? new DataSyncAgent(table, schema, json, validator, jsonAgent);
         _schemaAgent = new SchemaViewAgent(dataSync, _toastAgent);
+        _schemaAgent.SchemaChanged += RefreshFromSchema;
 
         Columns = new ObservableCollection<SchemaColumnViewModel>(
             _schemaAgent.Schema.Columns.Select((c, i) => new SchemaColumnViewModel(i, c, _schemaAgent, _toastAgent)));
@@ -29,6 +30,10 @@ public class SchemaViewModel : WorkspaceViewModel
     }
 
     public override string Title => "Schema View";
+
+    // Tree/Structure icon geometry (mdi-sitemap)
+    // Tree/Structure icon geometry (mdi-sitemap)
+    public override string IconName => "mdi-sitemap";
 
     public override string Subtitle => "Define column rules and validation";
 
@@ -173,7 +178,7 @@ public class SchemaColumnViewModel : ViewModelBase
 
     private ColumnSchema BuildSchemaSnapshot()
     {
-        return new ColumnSchema(Name, Type, IsNullable, Min, Max, DistinctCount, SampleValues.Split(',').Select(s => s.Trim()).ToList());
+        return new ColumnSchema(Name, Type, IsNullable, Min, Max, DistinctCount, SampleValues.Split(',').Select(s => (string?)s.Trim()).ToList());
     }
 
     private void TryCommitSchemaChange(DataType? previousType = null, bool? previousNullable = null, double? previousMin = null, double? previousMax = null)

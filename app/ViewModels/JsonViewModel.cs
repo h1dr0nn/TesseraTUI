@@ -28,7 +28,7 @@ public class JsonViewModel : WorkspaceViewModel
 
     public JsonViewModel(DataSyncAgent? dataSyncAgent = null, ValidationAgent? validationAgent = null, JsonAgent? jsonAgent = null, UIToastAgent? toastAgent = null)
     {
-        var (table, schema, json, validator, agent) = SampleDataFactory.CreateWorkspace();
+        var (table, schema, json, validator, agent) = SampleDataFactory.CreateEmptyWorkspace();
         var sync = dataSyncAgent ?? new DataSyncAgent(table, schema, json, validator, agent);
         var jsonValidator = validationAgent ?? validator;
         var jsonFormatter = jsonAgent ?? agent;
@@ -40,7 +40,7 @@ public class JsonViewModel : WorkspaceViewModel
         CanApply = true;
         DiffPreview = JsonDiffResult.Empty;
 
-        sync.TableChanged += SyncFromModel;
+        _agent.DataChanged += SyncFromModel;
 
         ApplyChangesCommand = new DelegateCommand(_ => ShowDiffPreview());
         _confirmApplyCommand = new DelegateCommand(_ => CommitChanges(), _ => _pendingModel is not null);
@@ -52,6 +52,10 @@ public class JsonViewModel : WorkspaceViewModel
     }
 
     public override string Title => "JSON View";
+
+    // JSON icon geometry (mdi-code-json)
+    // JSON icon geometry (mdi-code-json)
+    public override string IconName => "mdi-code-json";
 
     public override string Subtitle => "Work directly with JSON format";
 
@@ -105,7 +109,9 @@ public class JsonViewModel : WorkspaceViewModel
 
     private void SyncFromModel()
     {
+        Console.WriteLine("[JsonViewModel] Syncing from model...");
         EditorText = _agent.SerializeCurrent();
+        Console.WriteLine($"[JsonViewModel] EditorText updated. Length: {EditorText.Length}");
         _lastValidText = EditorText;
         ValidationChanged?.Invoke(new JsonValidationResult(true, new(), _agent.CurrentJson));
     }
