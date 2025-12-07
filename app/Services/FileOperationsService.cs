@@ -114,7 +114,7 @@ public class FileOperationsService
         {
             // Try xdg-open on the parent directory
             var directory = File.Exists(path) ? Path.GetDirectoryName(path) : path;
-            System.Diagnostics.Process.Start("xdg-open", $"\"{directory}\"");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = "xdg-open", Arguments = $"\"{directory}\"", UseShellExecute = true });
         }
     }
 }
