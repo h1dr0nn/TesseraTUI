@@ -12,7 +12,10 @@ public class SchemaViewAgent
     {
         _dataSyncAgent = dataSyncAgent;
         _toastAgent = toastAgent;
+        _dataSyncAgent.TableChanged += () => SchemaChanged?.Invoke();
     }
+
+    public event Action? SchemaChanged;
 
     public SchemaModel Schema => _dataSyncAgent.Schema;
 

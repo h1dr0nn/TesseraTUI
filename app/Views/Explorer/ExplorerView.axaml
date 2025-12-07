@@ -1,0 +1,139 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Tessera.ViewModels"
+             xmlns:i="https://github.com/projektanker/icons.avalonia"
+             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="450"
+             x:Class="Tessera.Views.Explorer.ExplorerView">
+             
+    <UserControl.Styles>
+        <Style Selector="TreeViewItem">
+            <Setter Property="MinHeight" Value="24" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.Resources>
+        <!-- Adjust this margin to move text up/down globally. Format: Left,Top,Right,Bottom -->
+        <Thickness x:Key="TextOffsetMargin">0,4,0,0</Thickness>
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Workspace Header -->
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="0,0,0,1" Padding="12,10">
+            <Grid ColumnDefinitions="*,Auto">
+                <!-- Workspace Title -->
+                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="EXPLORER" FontSize="11" FontWeight="Bold" 
+                               Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="0.5"/>
+                    <TextBlock Text="{Binding FileExplorer.RootPath, TargetNullValue='No Folder Opened'}" 
+                               FontSize="12" FontWeight="SemiBold"
+                                Foreground="{DynamicResource TextPrimaryBrush}"/>
+                </StackPanel>
+                
+                <!-- Workspace Actions Menu -->
+                <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="6" Width="28" Height="28" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <i:Icon Value="mdi-dots-vertical" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                    <Button.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuItem Command="{Binding FileExplorer.OpenFolderCommand}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="Open Folder..." Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-folder-open" FontSize="16"  />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding FileExplorer.CloseWorkspaceCommand}"
+                                      IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="Close Workspace" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-close-box-outline" FontSize="16"  />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Command="{Binding FileExplorer.RefreshCommand}"
+                                      IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="Refresh" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-refresh" FontSize="16"  />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Content Switcher: Tree or Empty State -->
+        <ScrollViewer Grid.Row="1" Margin="12,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <Panel>
+                <!-- Empty State: Show when Workspace is NOT open -->
+                <StackPanel IsVisible="{Binding !FileExplorer.IsWorkspaceOpen}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                    <TextBlock Text="No folder opened" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" TextAlignment="Center"/>
+                    <TextBlock Text="Open a folder to get started" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Tree State: Show when Workspace IS open -->
+                <TreeView IsVisible="{Binding FileExplorer.IsWorkspaceOpen}" 
+                          ItemsSource="{Binding FileExplorer.Files}" 
+                          SelectedItem="{Binding FileExplorer.SelectedNode}" 
+                          Background="Transparent" 
+                          BorderThickness="0"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <TreeView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Command="{Binding FileExplorer.NewFileCommand}" IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="New File" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-file-plus-outline" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding FileExplorer.NewFolderCommand}" IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="New Folder" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-folder-plus-outline" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Command="{Binding FileExplorer.RefreshCommand}" IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="Refresh" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-refresh" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </TreeView.ContextMenu>
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate ItemsSource="{Binding Children}">
+                            <Grid ColumnDefinitions="Auto,*" Margin="0,4,0,4" VerticalAlignment="Center">
+                                <i:Icon Grid.Column="0" Value="mdi-folder" FontSize="16" IsVisible="{Binding IsDirectory}" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <i:Icon Grid.Column="0" Value="mdi-file-outline" FontSize="16" IsVisible="{Binding IsDirectory, Converter={StaticResource InverseBoolConverter}}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="{StaticResource TextOffsetMargin}" />
+                            </Grid>
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </Panel>
+        </ScrollViewer>
+        
+        <!-- Bottom Settings Action -->
+        <Button Grid.Row="2" Command="{Binding ToggleSettingsCommand}" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12" Margin="12,0,12,12">
+            <Grid ColumnDefinitions="Auto,*">
+                <i:Icon Value="mdi-cog" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <TextBlock Grid.Column="1" Text="Settings" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" FontSize="13" Margin="{StaticResource TextOffsetMargin}" />
+            </Grid>
+        </Button>
+    </Grid>
+</UserControl>

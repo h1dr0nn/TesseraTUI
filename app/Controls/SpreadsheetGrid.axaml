@@ -1,0 +1,197 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:Tessera.Controls"
+             x:Class="Tessera.Controls.SpreadsheetGrid"
+             Focusable="True">
+
+  <UserControl.Styles>
+    <!-- Cell styles -->
+    <Style Selector="Border.cell">
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushLight}" />
+      <Setter Property="BorderThickness" Value="0,0,1,1" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="MinHeight" Value="28" />
+    </Style>
+    
+    <Style Selector="Border.cell:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    
+    <Style Selector="Border.cell.selected">
+      <Setter Property="Background" Value="#CCE8FF" />
+    </Style>
+    
+    <!-- Header styles -->
+    <Style Selector="Border.header">
+      <Setter Property="Background" Value="{DynamicResource StrongSurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushLight}" />
+      <Setter Property="BorderThickness" Value="0,0,1,1" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="MinWidth" Value="40" />
+    </Style>
+    
+    <Style Selector="Border.header:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    
+    <Style Selector="Border.header.selected">
+      <Setter Property="Background" Value="#A8D4FF" />
+    </Style>
+    
+    <!-- Corner cell -->
+    <Style Selector="Border.corner">
+      <Setter Property="Background" Value="{DynamicResource StrongSurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushLight}" />
+      <Setter Property="BorderThickness" Value="0,0,1,1" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="28" />  <!-- Column headers -->
+      <RowDefinition Height="*" />   <!-- Cells -->
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="40" />  <!-- Row headers -->
+      <ColumnDefinition Width="*" />   <!-- Cells -->
+    </Grid.ColumnDefinitions>
+    
+    <!-- Corner cell (select all) -->
+    <Border Grid.Row="0" Grid.Column="0" 
+            Classes="corner"
+            PointerPressed="OnCornerPressed"
+            Cursor="Hand"
+            ToolTip.Tip="Select All" />
+    
+    
+    <!-- Column headers -->
+    <ScrollViewer Grid.Row="0" Grid.Column="1"
+                  x:Name="ColumnHeaderScroll"
+                  HorizontalScrollBarVisibility="Hidden"
+                  VerticalScrollBarVisibility="Disabled">
+      <ItemsControl x:Name="ColumnHeaders" ItemsSource="{Binding Columns}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Grid Width="{Binding Width}">
+              <!-- Header content (leave 4px space on right for resize grip) -->
+              <Border Classes="header"
+                      Tag="{Binding Index}"
+                      PointerPressed="OnColumnHeaderPressed"
+                      DoubleTapped="OnColumnHeaderDoubleTapped"
+                      Cursor="Hand">
+                <TextBlock Text="{Binding Header}" 
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Padding="8,4"
+                           Margin="0,0,4,0" />
+              </Border>
+              
+              <!-- Resize grip (4px strip at right edge) -->
+              <Border Width="4" 
+                      HorizontalAlignment="Right"
+                      Background="Transparent"
+                      Cursor="SizeWestEast"
+                      Tag="{Binding Index}"
+                      PointerPressed="OnColumnResizeStart"
+                      PointerMoved="OnColumnResizeMove"
+                      PointerReleased="OnColumnResizeEnd">
+                <Border.Styles>
+                  <Style Selector="Border:pointerover">
+                    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+                  </Style>
+                </Border.Styles>
+              </Border>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    
+    <!-- Row headers -->
+    <ScrollViewer Grid.Row="1" Grid.Column="0"
+                  x:Name="RowHeaderScroll"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Hidden">
+      <ItemsControl x:Name="RowHeaders" ItemsSource="{Binding Rows}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Vertical" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="header"
+                    Height="28"
+                    Tag="{Binding Index}"
+                    PointerPressed="OnRowHeaderPressed"
+                    Cursor="Hand">
+              <TextBlock Text="{Binding Index, StringFormat={}{0}}" 
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         Padding="4" />
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    
+    <!-- Main cell grid -->
+    <ScrollViewer Grid.Row="1" Grid.Column="1"
+                  x:Name="CellScroll"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  ScrollChanged="OnCellScrollChanged">
+      <Grid>
+        <!-- Cell content -->
+        <ItemsControl x:Name="CellGrid" ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Vertical" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <ItemsControl ItemsSource="{Binding Cells}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Classes="cell"
+                            Width="{Binding Column.Width, FallbackValue=120}"
+                            Height="28"
+                            PointerPressed="OnCellPressed"
+                            PointerMoved="OnCellPointerMoved"
+                            PointerReleased="OnCellPointerReleased"
+                            DoubleTapped="OnCellDoubleTapped">
+                      <!-- Display mode -->
+                      <TextBlock Text="{Binding Value}" 
+                                 VerticalAlignment="Center"
+                                 Padding="8,4"
+                                 IsVisible="{Binding !IsEditing}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        
+        <!-- Selection overlay (rendered on top) -->
+        <Canvas x:Name="SelectionOverlay" 
+                IsHitTestVisible="False"
+                ClipToBounds="True" />
+      </Grid>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

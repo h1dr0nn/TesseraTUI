@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using Avalonia.Threading;
+using Avalonia.Media;
 using Tessera.ViewModels;
 
 namespace Tessera.Agents;
@@ -9,7 +10,8 @@ public enum ToastLevel
 {
     Info,
     Warning,
-    Error
+    Error,
+    Success
 }
 
 public class ToastViewModel : ViewModelBase
@@ -34,6 +36,14 @@ public class ToastViewModel : ViewModelBase
     }
 
     public DelegateCommand DismissCommand { get; }
+
+    public IBrush BackgroundBrush => Level switch
+    {
+        ToastLevel.Warning => new SolidColorBrush(Color.Parse("#E9C46A")),
+        ToastLevel.Error => new SolidColorBrush(Color.Parse("#E76F51")),
+        ToastLevel.Success => new SolidColorBrush(Color.Parse("#2A9D8F")),
+        _ => new SolidColorBrush(Color.Parse("#2A9D8F")) // Info/Default
+    };
 }
 
 public class UIToastAgent

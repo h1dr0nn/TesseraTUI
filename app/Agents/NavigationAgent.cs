@@ -20,14 +20,17 @@ public class NavigationAgent : ViewModelBase
         get => _activeView;
         set
         {
-            if (SetProperty(ref _activeView, value) && value != null)
+            if (SetProperty(ref _activeView, value))
             {
                 foreach (var view in Views)
                 {
                     view.IsSelected = view == value;
                 }
 
-                ActiveViewChanged?.Invoke(value);
+                if (value != null)
+                {
+                    ActiveViewChanged?.Invoke(value);
+                }
             }
         }
     }
@@ -37,7 +40,16 @@ public class NavigationAgent : ViewModelBase
     public void RegisterView(WorkspaceViewModel view)
     {
         Views.Add(view);
-        if (ActiveView is null)
+        // Don't auto-select - default to plain text view (ActiveView = null)
+    }
+
+    public void ToggleView(WorkspaceViewModel view)
+    {
+        if (ActiveView == view)
+        {
+            ActiveView = null; // Deselect
+        }
+        else
         {
             ActiveView = view;
         }

@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="48"
+             x:Class="Tessera.Views.Layout.TopBarView">
+    
+    <UserControl.Styles>
+        <Style Selector="Button.active">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="Opacity" Value="0.9" />
+        </Style>
+        <Style Selector="Button Path">
+            <Setter Property="Fill" Value="{Binding $parent[Button].Foreground}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource StrongSurfaceBrush}" Height="48" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="0,0,0,1">
+        <Grid>
+            <!-- Logo / Brand -->
+            <TextBlock Text="Tessera" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" Margin="16,0" VerticalAlignment="Center"/>
+        </Grid>
+    </Border>
+</UserControl>

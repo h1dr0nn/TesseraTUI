@@ -34,11 +34,24 @@ public class DataSyncAgent
     public ValidationAgent Validator { get; }
 
     public event Action? TableChanged;
+    
+    public void NotifyTableChanged() => TableChanged?.Invoke();
+
+    public void LoadNewData(TableModel table, SchemaModel schema)
+    {
+        EnsureTableMatchesSchema(table, schema);
+        Table = table;
+        Schema = schema;
+        RecalculateSchemaStats();
+        Json = _jsonAgent.BuildJsonFromTable(table, schema);
+        TableChanged?.Invoke();
+    }
 
     public void ApplyTableEdit(TableModel updatedTable)
     {
         EnsureTableMatchesSchema(updatedTable, Schema);
         Table = updatedTable;
+        RecalculateSchemaStats();
         Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
     }
@@ -55,6 +68,7 @@ public class DataSyncAgent
         EnsureTableMatchesSchema(tableFromJson, Schema);
         Json = updatedJson;
         Table = tableFromJson;
+        RecalculateSchemaStats();
         TableChanged?.Invoke();
     }
 
@@ -100,6 +114,7 @@ public class DataSyncAgent
         }
 
         row.Cells[columnIndex] = normalizedValue;
+        RecalculateSchemaStats();
         Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
         return true;
@@ -120,6 +135,7 @@ public class DataSyncAgent
         }
 
         Schema.Columns[columnIndex] = updatedSchema;
+        RecalculateSchemaStats();
         Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
         return true;
@@ -139,6 +155,47 @@ public class DataSyncAgent
         Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
         return true;
+    }
+
+    public void RecalculateSchemaStats()
+    {
+        for (int i = 0; i < Schema.Columns.Count; i++)
+        {
+            var col = Schema.Columns[i];
+            var values = new List<string?>();
+            foreach (var row in Table.Rows)
+            {
+                if (row.Cells.Count > i)
+                {
+                    values.Add(row.Cells[i]);
+                }
+            }
+
+            var nonEmpty = values.Where(v => !string.IsNullOrWhiteSpace(v)).ToList();
+            col.DistinctCount = nonEmpty.Distinct().Count();
+            col.SampleValues.Clear();
+            col.SampleValues.AddRange(nonEmpty.Take(5));
+
+            if (col.Type == DataType.Int || col.Type == DataType.Float)
+            {
+                var nums = nonEmpty
+                    .Select(v => double.TryParse(v, out var d) ? d : (double?)null)
+                    .Where(d => d.HasValue)
+                    .Select(d => d.Value)
+                    .ToList();
+
+                if (nums.Any())
+                {
+                    col.Min = nums.Min();
+                    col.Max = nums.Max();
+                }
+                else
+                {
+                    col.Min = null;
+                    col.Max = null;
+                }
+            }
+        }
     }
 
     private static void EnsureTableMatchesSchema(TableModel table, SchemaModel schema)

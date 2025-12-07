@@ -7,7 +7,7 @@ namespace Tessera.Utils;
 
 public static class ClipboardCsvHelper
 {
-    public static string Serialize(IEnumerable<IEnumerable<string?>> rows)
+    public static string Serialize(IEnumerable<IEnumerable<string?>> rows, char delimiter = ',')
     {
         var builder = new StringBuilder();
         var firstRow = true;
@@ -20,13 +20,13 @@ public static class ClipboardCsvHelper
             }
 
             firstRow = false;
-            builder.Append(string.Join(',', row.Select(Escape))); 
+            builder.Append(string.Join(delimiter, row.Select(v => Escape(v, delimiter)))); 
         }
 
         return builder.ToString();
     }
 
-    public static IList<IList<string?>> Parse(string text)
+    public static IList<IList<string?>> Parse(string text, char delimiter = ',')
     {
         var rows = new List<IList<string?>>();
         using var reader = new StringReader(text);
@@ -34,7 +34,7 @@ public static class ClipboardCsvHelper
 
         while ((line = reader.ReadLine()) != null)
         {
-            rows.Add(ParseLine(line));
+            rows.Add(ParseLine(line, delimiter));
         }
 
         if (text.EndsWith('\n'))
@@ -45,10 +45,10 @@ public static class ClipboardCsvHelper
         return rows;
     }
 
-    private static string Escape(string? value)
+    private static string Escape(string? value, char delimiter)
     {
         var safe = value ?? string.Empty;
-        var requiresQuotes = safe.IndexOfAny(new[] { ',', '\n', '\r', '"' }) >= 0;
+        var requiresQuotes = safe.IndexOfAny(new[] { delimiter, '\n', '\r', '"' }) >= 0;
         if (safe.Contains('"'))
         {
             safe = safe.Replace("\"", "\"\"");
@@ -57,7 +57,7 @@ public static class ClipboardCsvHelper
         return requiresQuotes ? $"\"{safe}\"" : safe;
     }
 
-    private static IList<string?> ParseLine(string line)
+    private static IList<string?> ParseLine(string line, char delimiter)
     {
         var values = new List<string?>();
         var current = new StringBuilder();
@@ -86,7 +86,7 @@ public static class ClipboardCsvHelper
             }
             else
             {
-                if (c == ',')
+                if (c == delimiter)
                 {
                     values.Add(current.ToString());
                     current.Clear();

@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewmodels="clr-namespace:Tessera.ViewModels"
+             xmlns:utils="clr-namespace:Tessera.Utils"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Tessera.Views.Settings.SettingsView">
+  
+  <UserControl.Resources>
+      <utils:CategoryToVisibilityConverter x:Key="CategoryEqConverter" />
+      <utils:BoolToTextWrappingConverter x:Key="BoolToTextWrappingConverter" />
+  </UserControl.Resources>
+
+   <!-- Settings Content Only (no sidebar - handled by MainWindow) -->
+  <Border Padding="32" Background="{DynamicResource PageBackgroundBrush}">
+      <StackPanel Spacing="24" HorizontalAlignment="Stretch">
+              
+              <TextBlock Text="Settings" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
+
+              <!-- Appearance Section -->
+              <StackPanel Name="AppearanceSection" Spacing="16">
+                   <TextBlock Text="Appearance" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                   <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1" CornerRadius="4" Padding="16">
+                       <StackPanel Spacing="16">
+                           <!-- Theme Mode -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Theme Mode" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Switch between Light and Dark themes" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsDarkMode, Mode=TwoWay}" OnContent="" OffContent="" />
+                           </Grid>
+                           
+                           <!-- High Contrast -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="High Contrast Mode" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Increase contrast for better visibility" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding HighContrastMode}" OnContent="" OffContent="" />
+                           </Grid>
+                       </StackPanel>
+                   </Border>
+              </StackPanel>
+
+              <!-- Editor Section -->
+              <StackPanel Name="EditorSection" Spacing="16">
+                   <TextBlock Text="Editor" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                   <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1" CornerRadius="4" Padding="16">
+                       <StackPanel Spacing="16">
+                           <!-- Font Size -->
+                           <Grid ColumnDefinitions="*,120">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Font Size" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Control the text size in the editor" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ComboBox Grid.Column="1" 
+                                         SelectedItem="{Binding FontSize}" 
+                                         ItemsSource="{Binding FontSizes}" 
+                                         HorizontalAlignment="Stretch" 
+                                         VerticalAlignment="Center"
+                                         VerticalContentAlignment="Center"
+                                         Height="32"
+                                         Padding="8,4" />
+                           </Grid>
+
+                           <!-- Row Height -->
+                           <Grid ColumnDefinitions="*,120">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Row Height" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Height of rows in table view (0 for Auto)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <NumericUpDown Grid.Column="1" 
+                                              Value="{Binding RowHeight}" 
+                                              Minimum="0" Maximum="100" 
+                                              VerticalAlignment="Center"
+                                              VerticalContentAlignment="Center"
+                                              Height="32"
+                                              Padding="8,6" />
+                           </Grid>
+                           
+                           <!-- Auto Save -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Auto Save" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Automatically save changes on focus lost" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoSave}" OnContent="" OffContent="" />
+                           </Grid>
+                           
+                           <!-- Show Line Numbers -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Show Line Numbers" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Display line numbers in the gutter" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowLineNumbers}" OnContent="" OffContent="" />
+                           </Grid>
+
+                           <!-- Render Whitespace -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Render Whitespace" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Show visual indicators for whitespace" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding RenderWhitespace}" OnContent="" OffContent="" />
+                           </Grid>
+
+                           <!-- Word Wrap -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Word Wrap" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Wrap long lines to the next line" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding WordWrap}" OnContent="" OffContent="" />
+                           </Grid>
+                       </StackPanel>
+                   </Border>
+              </StackPanel>
+              
+              <!-- Data Processing Section -->
+              <StackPanel Name="DataProcessingSection" Spacing="16">
+                   <TextBlock Text="Data Processing" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                   <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="1" CornerRadius="4" Padding="16">
+                       <StackPanel Spacing="16">
+                           <!-- CSV Delimiter -->
+                           <Grid ColumnDefinitions="*,180">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="CSV Delimiter" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Default character for separation" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ComboBox Grid.Column="1" 
+                                         SelectedItem="{Binding CsvDelimiter}" 
+                                         ItemsSource="{Binding Delimiters}" 
+                                         HorizontalAlignment="Stretch" 
+                                         VerticalAlignment="Center"
+                                         VerticalContentAlignment="Center"
+                                         Height="32"
+                                         Padding="8,4" />
+                           </Grid>
+                           
+                           <!-- Trim Whitespace -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Trim Whitespace" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Remove leading/trailing whitespace on save" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding TrimWhitespace}" OnContent="" OffContent="" />
+                           </Grid>
+                       </StackPanel>
+                   </Border>
+              </StackPanel>
+                
+               <!-- About Section -->
+               <StackPanel Name="AboutSection">
+                    <TextBlock Text="About" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+                    <Border Background="{DynamicResource StrongSurfaceBrush}" Padding="16" CornerRadius="4">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Tessera - CSV Editor" FontWeight="Bold" />
+                            <TextBlock Text="Version 1.0.0 (Beta)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="© 2025 h1dr0n" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+               </StackPanel>
+
+          </StackPanel>
+      </Border>
+</UserControl>

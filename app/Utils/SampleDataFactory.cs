@@ -8,6 +8,18 @@ namespace Tessera.Utils;
 
 public static class SampleDataFactory
 {
+    public static (TableModel Table, SchemaModel Schema, JsonModel Json, ValidationAgent Validator, JsonAgent JsonAgent) CreateEmptyWorkspace()
+    {
+        var jsonAgent = new JsonAgent();
+        var validator = new ValidationAgent(jsonAgent);
+        
+        var schema = new SchemaModel(new List<ColumnSchema>());
+        var table = new TableModel(new List<ColumnModel>(), new List<RowModel>());
+        var json = new JsonModel(new List<Dictionary<string, object?>>());
+
+        return (table, schema, json, validator, jsonAgent);
+    }
+
     public static (TableModel Table, SchemaModel Schema, JsonModel Json, ValidationAgent Validator, JsonAgent JsonAgent) CreateWorkspace()
     {
         var schema = BuildSampleSchema();

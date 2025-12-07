@@ -9,11 +9,13 @@ namespace Tessera.Agents;
 
 public class TableViewAgent
 {
+    private readonly SettingsAgent _settingsAgent;
     private readonly DataSyncAgent _dataSyncAgent;
     private readonly HistoryAgent _historyAgent;
 
-    public TableViewAgent(DataSyncAgent dataSyncAgent, HistoryAgent historyAgent)
+    public TableViewAgent(SettingsAgent settingsAgent, DataSyncAgent dataSyncAgent, HistoryAgent historyAgent)
     {
+        _settingsAgent = settingsAgent;
         _dataSyncAgent = dataSyncAgent;
         _historyAgent = historyAgent;
     }
@@ -23,6 +25,14 @@ public class TableViewAgent
         add => _dataSyncAgent.TableChanged += value;
         remove => _dataSyncAgent.TableChanged -= value;
     }
+    
+    public void NotifyTableChanged() => _dataSyncAgent.NotifyTableChanged();
+    
+    public void RefreshData()
+    {
+        _dataSyncAgent.RecalculateSchemaStats();
+        _dataSyncAgent.NotifyTableChanged();
+    }
 
     public TableModel Table => _dataSyncAgent.Table;
 
@@ -31,6 +41,12 @@ public class TableViewAgent
     public bool TryCommitEdit(int rowIndex, int columnIndex, string? newValue, out string? normalizedValue, out string? errorMessage)
     {
         var oldValue = _dataSyncAgent.Table.Rows[rowIndex].Cells[columnIndex];
+        
+        if (_settingsAgent.TrimWhitespace && newValue != null)
+        {
+            newValue = newValue.Trim();
+        }
+
         var success = _dataSyncAgent.TryUpdateCell(rowIndex, columnIndex, newValue, out normalizedValue, out errorMessage);
         if (success && !Equals(oldValue, normalizedValue))
         {
@@ -107,7 +123,7 @@ public class TableViewAgent
                 return orderedCols.Select(colIndex => columns[colIndex]).ToList();
             });
 
-        return ClipboardCsvHelper.Serialize(values);
+        return ClipboardCsvHelper.Serialize(values, _settingsAgent.DelimiterChar);
     }
 
     public bool TryPaste(int startRow, int startColumn, IList<IList<string?>> pastedCells, out string? errorMessage)

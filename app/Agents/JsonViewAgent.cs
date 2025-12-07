@@ -14,7 +14,10 @@ public class JsonViewAgent
         _dataSyncAgent = dataSyncAgent;
         _validationAgent = validationAgent;
         _jsonAgent = jsonAgent;
+        _dataSyncAgent.TableChanged += () => DataChanged?.Invoke();
     }
+
+    public event Action? DataChanged;
 
     public SchemaModel Schema => _dataSyncAgent.Schema;
 
