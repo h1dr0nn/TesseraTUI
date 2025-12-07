@@ -173,7 +173,7 @@ public class TableViewModel : WorkspaceViewModel
         // Update selection bounds after table data changes
         _selection.UpdateBounds(_tableViewAgent.Table.Rows.Count, _tableViewAgent.Table.Columns.Count);
         
-        Console.WriteLine("[TableViewModel] Sync complete.");
+        // Sync complete
     }
     
     public void UpdateSelection(int rowIndex, int columnIndex)
