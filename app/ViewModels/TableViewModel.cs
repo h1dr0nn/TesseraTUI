@@ -144,7 +144,7 @@ public class TableViewModel : WorkspaceViewModel
         if (columnsChanged)
         {
             Columns.Clear();
-            Console.WriteLine($"[TableViewModel] Rebuilding columns. Count: {tableColumns.Count}");
+            // Rebuilding columns
             for (int i = 0; i < tableColumns.Count; i++)
             {
                 Columns.Add(new TableColumnViewModel(tableColumns[i].Name, i, _tableViewAgent));
