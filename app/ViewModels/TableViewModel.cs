@@ -152,7 +152,7 @@ public class TableViewModel : WorkspaceViewModel
         }
 
         // Rebuild Rows - REPLACE collection to avoid O(N) notification crash
-        Console.WriteLine($"[TableViewModel] Rebuilding rows. Count: {_tableViewAgent.Table.Rows.Count}");
+        // Rebuild Rows - REPLACE collection to avoid O(N) notification crash
         var newRows = new ObservableCollection<TableRowViewModel>();
         
         foreach (var rowModel in _tableViewAgent.Table.Rows.Select((r, i) => (Model: r, Index: i)))
