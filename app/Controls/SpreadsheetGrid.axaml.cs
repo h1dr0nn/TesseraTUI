@@ -651,7 +651,7 @@ public partial class SpreadsheetGrid : UserControl
         var cellVm = ViewModel.Rows[curRow].Cells[curCol];
         
         // For now, just select the cell
-        Console.WriteLine($"[SpreadsheetGrid] F2 edit requested for cell ({curRow}, {curCol})");
+        // F2 edit functionality to be implemented
     }
     
     #endregion
