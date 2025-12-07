@@ -104,7 +104,7 @@ public class FileOperationsService
     {
         if (OperatingSystem.IsMacOS())
         {
-            System.Diagnostics.Process.Start("open", $"-R \"{path}\"");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = "open", Arguments = $"-R \"{path}\"", UseShellExecute = true });
         }
         else if (OperatingSystem.IsWindows())
         {
