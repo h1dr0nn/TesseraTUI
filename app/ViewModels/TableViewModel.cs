@@ -125,7 +125,7 @@ public class TableViewModel : WorkspaceViewModel
 
     public void SyncFromModel()
     {
-        Console.WriteLine("[TableViewModel] Syncing from model...");
+        // Syncing from model
         
         var tableColumns = _tableViewAgent.Table.Columns;
         bool columnsChanged = Columns.Count != tableColumns.Count;
