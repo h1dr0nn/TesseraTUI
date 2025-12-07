@@ -108,7 +108,7 @@ public class FileOperationsService
         }
         else if (OperatingSystem.IsWindows())
         {
-            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"");
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = "explorer.exe", Arguments = $"/select,\"{path}\"", UseShellExecute = true });
         }
         else if (OperatingSystem.IsLinux())
         {
