@@ -43,4 +43,12 @@ public abstract class WorkspaceViewModel : ViewModelBase
         get => _isSelected;
         set => SetProperty(ref _isSelected, value);
     }
+    
+    /// <summary>
+    /// Called before the application saves. Views should override this to commit any pending changes to the shared model.
+    /// </summary>
+    public virtual System.Threading.Tasks.Task OnSaveAsync()
+    {
+        return System.Threading.Tasks.Task.CompletedTask;
+    }
 }

@@ -12,6 +12,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using Tessera.Core.Models;
+using System.Globalization;
 
 namespace Tessera.ViewModels;
 
@@ -172,53 +173,7 @@ public class MainWindowViewModel : ViewModelBase
                 FileTextContent = text;
                 RaisePropertyChanged(nameof(FileTextContent));
 
-                // Parse CSV
-                var rows = ClipboardCsvHelper.Parse(text, _settingsAgent.DelimiterChar);
-                
-                if (rows.Count > 0)
-                {
-                    // Assume first row is header
-                    var headerRow = rows[0];
-
-                    
-                    var dataRows = rows.Skip(1).ToList();
-
-                    var columns = new List<ColumnModel>();
-                    var columnSchemas = new List<ColumnSchema>();
-
-                    for (int i = 0; i < headerRow.Count; i++)
-                    {
-                        var header = headerRow[i] ?? $"Column {i + 1}";
-                        columns.Add(new ColumnModel(header));
-                        
-                        // Infer Data Type
-                        var inferredType = InferColumnType(dataRows, i);
-                        columnSchemas.Add(new ColumnSchema(header, inferredType, true)); 
-                    }
-
-                    var tableRows = new List<RowModel>();
-                    foreach (var row in dataRows)
-                    {
-                        // Ensure row has correct number of cells
-                        var cells = new List<string?>(row);
-                        while (cells.Count < columns.Count) cells.Add(null);
-                        while (cells.Count > columns.Count) cells.RemoveAt(cells.Count - 1);
-                        
-                        tableRows.Add(new RowModel(cells));
-                    }
-                    
-                    var tableModel = new TableModel(columns, tableRows);
-                    // SchemaModel(columns) - no name in constructor
-                    var schemaModel = new SchemaModel(columnSchemas);
-
-                    _dataSyncAgent.LoadNewData(tableModel, schemaModel);
-                    _dataSyncAgent.TableChanged += OnTableChanged;
-                    _toastAgent.ShowToast($"Opened {CurrentFileName}", ToastLevel.Success);
-                }
-                else
-                {
-                     _toastAgent.ShowToast("File is empty", ToastLevel.Warning);
-                }
+                LoadDataFromText(text, isInitialLoad: true);
             }
         }
         catch (Exception ex)
@@ -226,6 +181,69 @@ public class MainWindowViewModel : ViewModelBase
             FileTextContent = $"Error reading file: {ex.Message}";
             RaisePropertyChanged(nameof(FileTextContent));
             _toastAgent.ShowToast($"Error opening file: {ex.Message}", ToastLevel.Error);
+        }
+    }
+
+    private void LoadDataFromText(string text, bool isInitialLoad = false)
+    {
+        try
+        {
+            // Parse CSV
+            var rows = ClipboardCsvHelper.Parse(text, _settingsAgent.DelimiterChar);
+            
+            if (rows.Count > 0)
+            {
+                // Assume first row is header
+                var headerRow = rows[0];
+                var dataRows = rows.Skip(1).ToList();
+
+                var columns = new List<ColumnModel>();
+                var columnSchemas = new List<ColumnSchema>();
+
+                for (int i = 0; i < headerRow.Count; i++)
+                {
+                    var header = headerRow[i] ?? $"Column {i + 1}";
+                    columns.Add(new ColumnModel(header));
+                    
+                    // Infer Data Type
+                    var inferredType = InferColumnType(dataRows, i);
+                    columnSchemas.Add(new ColumnSchema(header, inferredType, true)); 
+                }
+
+                var tableRows = new List<RowModel>();
+                foreach (var row in dataRows)
+                {
+                    // Ensure row has correct number of cells
+                    var cells = new List<string?>(row);
+                    while (cells.Count < columns.Count) cells.Add(null);
+                    while (cells.Count > columns.Count) cells.RemoveAt(cells.Count - 1);
+                    
+                    tableRows.Add(new RowModel(cells));
+                }
+                
+                var tableModel = new TableModel(columns, tableRows);
+                var schemaModel = new SchemaModel(columnSchemas);
+
+                _dataSyncAgent.LoadNewData(tableModel, schemaModel);
+                
+                if (isInitialLoad)
+                {
+                     _dataSyncAgent.TableChanged += OnTableChanged;
+                     _toastAgent.ShowToast($"Opened {CurrentFileName}", ToastLevel.Success);
+                }
+            }
+            else
+            {
+                 if (isInitialLoad) _toastAgent.ShowToast("File is empty", ToastLevel.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            // If parsing fails during save, we might want to know
+            if (!isInitialLoad)
+            {
+                _toastAgent.ShowToast($"Warning: Could not sync data model: {ex.Message}", ToastLevel.Warning);
+            }
         }
     }
 
@@ -243,7 +261,7 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void SaveFile(bool isAutoSave = false)
+    private async void SaveFile(bool isAutoSave = false)
     {
         if (string.IsNullOrEmpty(_currentFilePath) || !File.Exists(_currentFilePath))
         {
@@ -256,10 +274,19 @@ public class MainWindowViewModel : ViewModelBase
             Status = WorkspaceStatus.Editing;
             StatusMessage = isAutoSave ? "Auto Saving..." : "Saving...";
 
+            // CRITICAL: Allow active view to commit changes to the shared model before we save
+            if (ActiveView != null)
+            {
+                await ActiveView.OnSaveAsync();
+            }
+
             if (ActiveView is null)
             {
                 // Save Plain Text content directly
                 File.WriteAllText(_currentFilePath, FileTextContent);
+                
+                // CRITICAL FIX: Sync changes back to Data Model so other views (Table/Json) are updated
+                LoadDataFromText(FileTextContent, isInitialLoad: false);
             }
             else
             {
@@ -346,10 +373,19 @@ public class MainWindowViewModel : ViewModelBase
 
             hasValues = true;
 
-            if (canBeInt && !int.TryParse(val, out _)) canBeInt = false;
-            if (canBeFloat && !double.TryParse(val, out _)) canBeFloat = false;
+            if (canBeInt && !int.TryParse(val, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)) canBeInt = false;
+            
+            if (canBeFloat) 
+            {
+                bool parsed = double.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
+                if (!parsed && val.Contains(','))
+                {
+                    parsed = double.TryParse(val.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out _);
+                }
+                if (!parsed) canBeFloat = false;
+            }
             if (canBeBool && !bool.TryParse(val, out _)) canBeBool = false;
-            if (canBeDate && !DateTime.TryParse(val, out _)) canBeDate = false;
+            if (canBeDate && !DateTime.TryParse(val, CultureInfo.InvariantCulture, DateTimeStyles.None, out _)) canBeDate = false;
 
             // Short circuit if everything failed
             if (!canBeInt && !canBeFloat && !canBeBool && !canBeDate) return DataType.String;

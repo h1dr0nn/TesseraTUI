@@ -45,6 +45,7 @@ public partial class SpreadsheetGrid : UserControl
         
         // Handle keyboard events
         KeyDown += OnGridKeyDown;
+        TextInput += OnTextInput;
         Focusable = true;
         
         // Initialize column widths when data changes
@@ -435,7 +436,7 @@ public partial class SpreadsheetGrid : UserControl
         e.Handled = true;
     }
     
-    private void StartCellEdit(TableCellViewModel cellVm, Border cellBorder)
+    private void StartCellEdit(TableCellViewModel cellVm, Border cellBorder, string? initialText = null)
     {
         // Get actual cell width
         var cellWidth = cellBorder.Bounds.Width > 0 ? cellBorder.Bounds.Width : DefaultCellWidth;
@@ -443,7 +444,7 @@ public partial class SpreadsheetGrid : UserControl
         // Create inline TextBox for editing
         var textBox = new TextBox
         {
-            Text = cellVm.Value ?? "",
+            Text = initialText ?? cellVm.Value ?? "",
             Width = cellWidth,
             Height = CellHeight,
             Padding = new Thickness(8, 4),
@@ -453,6 +454,11 @@ public partial class SpreadsheetGrid : UserControl
             VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Center,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch
         };
+
+        if (!string.IsNullOrEmpty(initialText))
+        {
+            textBox.CaretIndex = textBox.Text.Length;
+        }
         
         textBox.KeyDown += (s, e) =>
         {
@@ -478,7 +484,10 @@ public partial class SpreadsheetGrid : UserControl
         // Replace cell content with TextBox
         cellBorder.Child = textBox;
         textBox.Focus();
-        textBox.SelectAll();
+        if (string.IsNullOrEmpty(initialText))
+        {
+            textBox.SelectAll();
+        }
     }
     
     private void EndCellEdit(Border cellBorder, TableCellViewModel cellVm)
@@ -572,15 +581,20 @@ public partial class SpreadsheetGrid : UserControl
                 break;
                 
             case Key.Enter:
-                row = Math.Min(maxRow, row + 1);
-                Selection.SelectCell(row, col);
-                UpdateSelectionOverlay();
+                StartEditCurrentCell();
                 e.Handled = true;
                 break;
                 
             case Key.F2:
                 // Start edit on current cell
                 StartEditCurrentCell();
+                e.Handled = true;
+                break;
+                
+            case Key.Delete:
+            case Key.Back:
+                // Map Delete/Back to ClearCellsCommand (if not in edit mode)
+                ViewModel.ClearCellsCommand.Execute(null);
                 e.Handled = true;
                 break;
                 
@@ -637,22 +651,36 @@ public partial class SpreadsheetGrid : UserControl
             CellScroll.Offset = new Vector(offset.X, targetY);
         }
     }
+
+    private void OnTextInput(object? sender, TextInputEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.Text)) return;
+        
+        // If we are already editing (TextBox is focused), do nothing (Bubble event)
+        // Check if focus is within a TextBox
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox) return;
+        
+        // Start editing with the typed text
+        StartEditCurrentCell(e.Text);
+        e.Handled = true;
+    }
     
-    private void StartEditCurrentCell()
+    private void StartEditCurrentCell(string? initialText = null)
     {
         if (Selection == null || Selection.CurrentCell.Row < 0 || ViewModel == null) return;
         
         var curRow = Selection.CurrentCell.Row;
         var curCol = Selection.CurrentCell.Col;
         if (curRow >= ViewModel.Rows.Count || curCol >= ViewModel.Rows[curRow].Cells.Count) return;
-        
-        // Find the cell border and start editing
-        // This is simplified - in full implementation would walk visual tree
-        var cellVm = ViewModel.Rows[curRow].Cells[curCol];
-        
-        // For now, just select the cell
-        // F2 edit functionality to be implemented
+
+        var cellBorder = GetCellBorder(curRow, curCol);
+        if (cellBorder != null)
+        {
+            var cellVm = ViewModel.Rows[curRow].Cells[curCol];
+            StartCellEdit(cellVm, cellBorder, initialText);
+        }
     }
+
     
     #endregion
 
@@ -681,19 +709,7 @@ public partial class SpreadsheetGrid : UserControl
     
     private Rect? GetCellBounds(int row, int col)
     {
-        // Find the actual cell visual and get its bounds
-        if (CellGrid?.ItemsSource is not System.Collections.IEnumerable) return null;
-        
-        var rowContainer = CellGrid.ContainerFromIndex(row) as ContentPresenter;
-        if (rowContainer == null) return null;
-        
-        var cellsControl = FindChild<ItemsControl>(rowContainer);
-        if (cellsControl == null) return null;
-        
-        var cellContainer = cellsControl.ContainerFromIndex(col) as ContentPresenter;
-        if (cellContainer == null) return null;
-        
-        var cellBorder = FindChild<Border>(cellContainer);
+        var cellBorder = GetCellBorder(row, col);
         if (cellBorder == null) return null;
         
         // Transform to CellGrid coordinates (parent of overlay)
@@ -776,4 +792,20 @@ public partial class SpreadsheetGrid : UserControl
     }
     
     #endregion
+
+    private Border? GetCellBorder(int row, int col)
+    {
+        if (CellGrid?.ItemsSource is not System.Collections.IEnumerable) return null;
+        
+        var rowContainer = CellGrid.ContainerFromIndex(row) as ContentPresenter;
+        if (rowContainer == null) return null;
+        
+        var cellsControl = FindChild<ItemsControl>(rowContainer);
+        if (cellsControl == null) return null;
+        
+        var cellContainer = cellsControl.ContainerFromIndex(col) as ContentPresenter;
+        if (cellContainer == null) return null;
+        
+        return FindChild<Border>(cellContainer);
+    }
 }

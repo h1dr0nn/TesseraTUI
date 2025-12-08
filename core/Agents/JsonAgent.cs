@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Globalization;
 using Tessera.Core.Models;
 
 namespace Tessera.Core.Agents;
@@ -207,14 +208,24 @@ public class JsonAgent
             return null;
         }
 
-        return dataType switch
+        switch (dataType)
         {
-            DataType.Int when long.TryParse(value, out var i) => i,
-            DataType.Float when double.TryParse(value, out var d) => d,
-            DataType.Bool when bool.TryParse(value, out var b) => b,
-            DataType.Date when DateTime.TryParse(value, out var dt) => dt,
-            _ => value
-        };
+            case DataType.Int:
+                 // Disallow thousands separator
+                 return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : null;
+            case DataType.Float:
+                 // Try strict invariant first (Dot)
+                 if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var d)) return d;
+                 // Fallback: Replace comma with dot for European format "88,9" -> "88.9"
+                 if (value.Contains(',') && double.TryParse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var d2)) return d2;
+                 return null;
+            case DataType.Bool:
+                 return bool.TryParse(value, out var b) ? b : null;
+            case DataType.Date:
+                 return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) ? dt : null;
+            default:
+                 return value;
+        }
     }
 }
 

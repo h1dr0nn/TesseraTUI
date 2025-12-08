@@ -5,6 +5,7 @@
         xmlns:controls="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls"
         x:Class="Tessera.Views.MainWindow"
         Title="Tessera"
+        Icon="/Assets/icon.png"
         Width="1200" Height="800"
         Background="{DynamicResource PageBackgroundBrush}">
 
