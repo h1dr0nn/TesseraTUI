@@ -41,7 +41,8 @@ public partial class JsonView : UserControl
 
             if (DataContext is JsonViewModel viewModel)
             {
-                Console.WriteLine($"[JsonView] OnLoaded sync. Text Len: {viewModel.EditorText.Length}");
+                // Syncing text
+
                 _isSyncing = true;
                 editor.Text = viewModel.EditorText;
                 _isSyncing = false;
@@ -52,7 +53,7 @@ public partial class JsonView : UserControl
     protected override void OnDataContextChanged(System.EventArgs e)
     {
         base.OnDataContextChanged(e);
-        Console.WriteLine("[JsonView] OnDataContextChanged");
+
         if (DataContext is JsonViewModel vm)
         {
             vm.ValidationChanged += ApplyValidation;
@@ -60,14 +61,16 @@ public partial class JsonView : UserControl
             
             if (this.FindControl<TextEditor>("JsonEditor") is { } editor)
             {
-               Console.WriteLine($"[JsonView] Initial sync. VM Text Length: {vm.EditorText.Length}");
+               // Initial sync
+
                _isSyncing = true;
                editor.Text = vm.EditorText;
                _isSyncing = false;
             }
             else 
             {
-                Console.WriteLine("[JsonView] JsonEditor control not found in OnDataContextChanged");
+                // JsonEditor control not found in OnDataContextChanged
+
             }
         }
     }
@@ -90,12 +93,12 @@ public partial class JsonView : UserControl
 
         if (e.PropertyName == nameof(JsonViewModel.EditorText))
         {
-            Console.WriteLine("[JsonView] EditorText property changed");
+
             if (DataContext is JsonViewModel vm && this.FindControl<TextEditor>("JsonEditor") is { } editor)
             {
                 if (editor.Text != vm.EditorText)
                 {
-                    Console.WriteLine("[JsonView] Syncing to editor...");
+
                     _isSyncing = true;
                     editor.Text = vm.EditorText;
                     _isSyncing = false;

@@ -26,8 +26,7 @@
     <KeyBinding Gesture="Ctrl+A" Command="{Binding SelectAllCommand}" />
     <KeyBinding Gesture="Cmd+A" Command="{Binding SelectAllCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding ClearSelectionCommand}" />
-    <KeyBinding Gesture="Delete" Command="{Binding ClearCellsCommand}" />
-    <KeyBinding Gesture="Back" Command="{Binding ClearCellsCommand}" />
+
     <KeyBinding Gesture="Shift+Space" Command="{Binding SelectRowCommand}" />
     <KeyBinding Gesture="Ctrl+Space" Command="{Binding SelectColumnCommand}" />
     <KeyBinding Gesture="Cmd+Space" Command="{Binding SelectColumnCommand}" />

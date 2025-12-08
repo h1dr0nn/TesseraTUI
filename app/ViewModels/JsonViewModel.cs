@@ -48,7 +48,7 @@ public class JsonViewModel : WorkspaceViewModel
         ResetCommand = new DelegateCommand(_ => Reset());
         FormatCommand = new DelegateCommand(_ => Format());
 
-        Warnings = new ObservableCollection<string>();
+
     }
 
     public override string Title => "JSON View";
@@ -59,7 +59,7 @@ public class JsonViewModel : WorkspaceViewModel
 
     public override string Subtitle => "Work directly with JSON format";
 
-    public ObservableCollection<string> Warnings { get; }
+
 
     public ICommand ApplyChangesCommand { get; }
 
@@ -109,9 +109,8 @@ public class JsonViewModel : WorkspaceViewModel
 
     private void SyncFromModel()
     {
-        Console.WriteLine("[JsonViewModel] Syncing from model...");
+        // Syncing from model
         EditorText = _agent.SerializeCurrent();
-        Console.WriteLine($"[JsonViewModel] EditorText updated. Length: {EditorText.Length}");
         _lastValidText = EditorText;
         ValidationChanged?.Invoke(new JsonValidationResult(true, new(), _agent.CurrentJson));
     }
@@ -142,12 +141,7 @@ public class JsonViewModel : WorkspaceViewModel
         var result = _agent.Validate(json);
         CanApply = result.IsValid;
         ValidationMessage = result.IsValid ? "JSON is valid." : result.Errors.FirstOrDefault()?.Message;
-        Warnings.Clear();
-        foreach (var warning in result.Errors.Where(e => e.Type is JsonValidationErrorType.MissingKey or JsonValidationErrorType.UnknownKey))
-        {
-            var label = warning.Type == JsonValidationErrorType.MissingKey ? "Missing required key" : "Unknown key";
-            Warnings.Add($"{label}: {warning.Key}");
-        }
+        ValidationMessage = result.IsValid ? "JSON is valid." : result.Errors.FirstOrDefault()?.Message;
 
         ValidationChanged?.Invoke(result);
     }
@@ -204,7 +198,7 @@ public class JsonViewModel : WorkspaceViewModel
         CanApply = true;
         ValidationMessage = "Restored last valid JSON.";
         _toastAgent.ShowToast("JSON reset", ToastLevel.Info);
-        Warnings.Clear();
+        _toastAgent.ShowToast("JSON reset", ToastLevel.Info);
         _pendingModel = null;
         _confirmApplyCommand.RaiseCanExecuteChanged();
         IsDiffOpen = false;
@@ -214,5 +208,39 @@ public class JsonViewModel : WorkspaceViewModel
     private void Format()
     {
         EditorText = _agent.Format(EditorText);
+    }
+
+    public override async Task OnSaveAsync()
+    {
+        // 1. Validate current text
+        var result = _agent.Validate(EditorText);
+        if (!result.IsValid)
+        {
+            var msg = result.Errors.FirstOrDefault()?.Message ?? "Invalid JSON";
+            throw new Exception($"Cannot save: {msg}");
+        }
+
+        // 2. Prepare Diff/Model
+        if (!_agent.TryPrepareDiff(EditorText, out var diff, out var validation, out var model))
+        {
+             var msg = validation.Errors.FirstOrDefault()?.Message ?? "Invalid JSON structure";
+             throw new Exception($"Cannot save: {msg}");
+        }
+
+        // 3. Commit to Shared Model
+        if (_agent.TryCommit(model!, out _, out _))
+        {
+            _lastValidText = _agent.SerializeCurrent();
+            EditorText = _lastValidText;
+            CanApply = true;
+            _pendingModel = null;
+            IsDiffOpen = false;
+        }
+        else
+        {
+            throw new Exception("Failed to commit JSON changes to model.");
+        }
+        
+        await Task.CompletedTask;
     }
 }

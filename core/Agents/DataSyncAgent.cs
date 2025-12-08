@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 using Tessera.Core.Models;
 
 namespace Tessera.Core.Agents;
@@ -179,9 +180,9 @@ public class DataSyncAgent
             if (col.Type == DataType.Int || col.Type == DataType.Float)
             {
                 var nums = nonEmpty
-                    .Select(v => double.TryParse(v, out var d) ? d : (double?)null)
+                    .Select(v => TryParseDouble(v, out var d) ? d : (double?)null)
                     .Where(d => d.HasValue)
-                    .Select(d => d.Value)
+                    .Select(d => d!.Value)
                     .ToList();
 
                 if (nums.Any())
@@ -232,12 +233,29 @@ public class DataSyncAgent
 
         return dataType switch
         {
-            DataType.Int => int.TryParse(value, out _),
-            DataType.Float => double.TryParse(value, out _),
+            DataType.Int => int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _),
+            DataType.Float => TryParseDouble(value, out _),
             DataType.Bool => bool.TryParse(value, out _),
-            DataType.Date => DateTime.TryParse(value, out _),
+            DataType.Date => DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
             _ => true
         };
+    }
+
+    private static bool TryParseDouble(string? value, out double result)
+    {
+        result = 0;
+        if (string.IsNullOrWhiteSpace(value)) return false;
+
+        // Try strict invariant first (Dot)
+        if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result)) return true;
+        
+        // Fallback: Replace comma with dot for European format "88,9" -> "88.9"
+        if (value.Contains(','))
+        {
+             return double.TryParse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
+        return false;
     }
 
 }
