@@ -15,12 +15,16 @@ jobs:
         include:
           - os: windows-latest
             rid: win-x64
+            ext: .exe
           - os: ubuntu-latest
             rid: linux-x64
+            ext: ""
           - os: macos-latest
             rid: osx-arm64
+            ext: ""
           - os: macos-13
             rid: osx-x64
+            ext: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -63,11 +67,16 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: mv publish/Tessera publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}
 
+      - name: List Publish Dir (Debug)
+        run: ls -R publish
+        shell: bash
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}
-          path: publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}*
+          path: publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}${{ matrix.ext }}
+          if-no-files-found: error
 
   release:
     name: Create Release
@@ -97,4 +106,4 @@ jobs:
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
-          files: artifacts/*
+          files: artifacts/**/*
