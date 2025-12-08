@@ -132,7 +132,7 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
   - Animation
   - Error display
   - Basic preferences
-- [ ] Tạo icon + branding cho Tessera.
+- [x] Tạo icon + branding cho Tessera.
 - [ ] Tối ưu start-up time.
 - [ ] Publish GitHub Release + changelog.
 
