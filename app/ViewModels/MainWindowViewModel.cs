@@ -40,7 +40,6 @@ public class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _settingsAgent.ThemeChanged += ApplyTheme;
-        _settingsAgent.SetTheme(ThemeVariant.Light);
 
         var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateEmptyWorkspace();
         _dataSyncAgent = new DataSyncAgent(table, schema, json, validator, jsonAgent);

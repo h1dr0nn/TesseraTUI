@@ -32,14 +32,14 @@ public class DataSyncAgentTests
         var json = new JsonModel(new List<Dictionary<string, object?>>());
         var agent = new DataSyncAgent(initialTable, schema, json);
 
-        var updatedJson = new JsonModel(new List<Dictionary<string, object?>
+        var updatedJson = new JsonModel(new List<Dictionary<string, object?>>
         {
             new()
             {
                 { "Name", "Bob" },
                 { "Active", false }
             }
-        }});
+        });
 
         agent.ApplyJsonEdit(updatedJson);
 
