@@ -125,16 +125,16 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
 
 ### 🚀 **Phase 7 — First Release (v0.1.0)**
 
-**Status: In Progress**
+**Status: Completed**
 
-- [ ] Build self-contained cho Windows/macOS/Linux.
+- [x] Build self-contained cho Windows/macOS/Linux.
 - [x] Final UX polish:
   - Animation
   - Error display
   - Basic preferences
 - [x] Tạo icon + branding cho Tessera.
-- [ ] Tối ưu start-up time.
-- [ ] Publish GitHub Release + changelog.
+- [x] Tối ưu start-up time.
+- [x] Publish GitHub Release + changelog.
 
 ---
 
