@@ -34,6 +34,7 @@ jobs:
         run: dotnet restore app/app.csproj
 
       - name: Publish
+        shell: bash
         run: |
           dotnet publish app/app.csproj \
           -c Release \
