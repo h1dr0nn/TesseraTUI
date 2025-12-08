@@ -198,7 +198,6 @@ public class JsonViewModel : WorkspaceViewModel
         CanApply = true;
         ValidationMessage = "Restored last valid JSON.";
         _toastAgent.ShowToast("JSON reset", ToastLevel.Info);
-        _toastAgent.ShowToast("JSON reset", ToastLevel.Info);
         _pendingModel = null;
         _confirmApplyCommand.RaiseCanExecuteChanged();
         IsDiffOpen = false;
