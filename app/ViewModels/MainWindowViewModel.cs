@@ -169,8 +169,6 @@ public class MainWindowViewModel : ViewModelBase
     private readonly DataSyncAgent _dataSyncAgent;
     private readonly JsonAgent _jsonAgent;
 
-
-
     private async void OnFileSelected(string path)
     {
         _currentFilePath = path;
