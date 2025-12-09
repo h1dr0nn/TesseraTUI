@@ -23,9 +23,6 @@ public class MainWindowViewModel : ViewModelBase
     private readonly UIToastAgent _toastAgent = new();
     private readonly NavigationAgent _navigationAgent = new();
     private readonly HistoryAgent _historyAgent = new();
-    // _dataSyncAgent and _jsonAgent are defined lower down in original file, but let's keep it consistent.
-    // The previous tool call replaced lines around 161. 
-    // I will check the file content first to be safe.
 
     private string _currentFileName = "No file opened";
     private WorkspaceStatus _status = WorkspaceStatus.Idle;
@@ -257,7 +254,7 @@ public class MainWindowViewModel : ViewModelBase
                 
                 if (isInitialLoad)
                 {
-                     _dataSyncAgent.NotifyTableChanged(); // Explicitly notify
+                     // _dataSyncAgent.NotifyTableChanged(); // Explicitly notify
                      // _dataSyncAgent.LoadNewData calls NotifyTableChanged internaly via TableChanged?.Invoke()
                      // but let's be safe as LoadNewData implementations vary
                      

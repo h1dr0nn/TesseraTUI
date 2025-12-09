@@ -21,13 +21,17 @@ jobs:
             ext: ""
           - os: macos-latest
             rid: osx-arm64
-            ext: ""
+            ext: .dmg
           - os: macos-15
             rid: osx-x64
-            ext: ""
+            ext: .dmg
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install create-dmg (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: brew install create-dmg
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -61,12 +65,153 @@ jobs:
       - name: Rename Artifact (Windows)
         if: matrix.os == 'windows-latest'
         run: move publish\Tessera.exe publish\Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.exe
-        shell: cmd
+      # Compress and Rename Output
+      - name: Package Artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd publish
 
-      - name: Rename Artifact (Unix)
-        if: matrix.os != 'windows-latest'
-        run: mv publish/Tessera publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}
+          # Create ZIP (Portable)
+          Compress-Archive -Path Tessera.exe -DestinationPath Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.zip
 
+          # Install Inno Setup
+          choco install innosetup --no-progress
+
+          # Create Inno Setup Script
+          $issContent = @"
+          [Setup]
+          AppName=Tessera
+          AppVersion=${{ steps.get_version.outputs.VERSION }}
+          DefaultDirName={autopf}\Tessera
+          DefaultGroupName=Tessera
+          OutputBaseFilename=Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}-setup
+          Compression=lzma2
+          SolidCompression=yes
+          OutputDir=.
+
+          [Files]
+          Source: "Tessera.exe"; DestDir: "{app}"; Flags: ignoreversion
+
+          [Icons]
+          Name: "{group}\Tessera"; Filename: "{app}\Tessera.exe"
+          Name: "{autodesktop}\Tessera"; Filename: "{app}\Tessera.exe"; Tasks: desktopicon
+
+          [Tasks]
+          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+          "@
+
+          Set-Content -Path setup.iss -Value $issContent
+
+          # Compile Installer
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
+        shell: powershell
+
+      - name: Package Artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd publish
+          chmod +x Tessera
+
+          # Create tar.gz (Portable)
+          tar -czf Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.tar.gz Tessera
+
+          # Create Deb Structure
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          ARCH="amd64" # Approximating for linux-x64
+          DEB_DIR="Tessera_${VERSION}_${ARCH}"
+          mkdir -p "$DEB_DIR/DEBIAN"
+          mkdir -p "$DEB_DIR/usr/bin"
+          mkdir -p "$DEB_DIR/usr/share/applications"
+          mkdir -p "$DEB_DIR/usr/share/icons/hicolor/512x512/apps"
+
+          # Copy Binary
+          cp Tessera "$DEB_DIR/usr/bin/tessera"
+
+          # Create Control File
+          cat > "$DEB_DIR/DEBIAN/control" <<EOF
+          Package: tessera
+          Version: $VERSION
+          Section: utils
+          Priority: optional
+          Architecture: $ARCH
+          Maintainer: h1dr0n <your-email@example.com>
+          Description: A TUI for Tessera
+           A terminal user interface application for Tessera.
+          EOF
+
+          # Create Desktop Entry
+          cat > "$DEB_DIR/usr/share/applications/tessera.desktop" <<EOF
+          [Desktop Entry]
+          Version=1.0
+          Name=Tessera
+          Comment=Tessera TUI
+          Exec=/usr/bin/tessera
+          Icon=tessera
+          Terminal=true
+          Type=Application
+          Categories=Utility;Application;
+          EOF
+
+          # Build Deb
+          dpkg-deb --build "$DEB_DIR"
+          mv "${DEB_DIR}.deb" "Tessera-${VERSION}-${{ matrix.rid }}.deb"
+
+      - name: Package Artifact (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          APP_NAME="Tessera"
+          APP_DIR="publish/$APP_NAME.app"
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+
+          # Move build artifacts to .app
+          mv publish/$APP_NAME "$APP_DIR/Contents/MacOS/"
+          # Copy other necessary files if any (libs are self-contained)
+
+          # Create Info.plist
+          cat > "$APP_DIR/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleName</key>
+              <string>$APP_NAME</string>
+              <key>CFBundleDisplayName</key>
+              <string>$APP_NAME</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.h1dr0n.tessera</string>
+              <key>CFBundleVersion</key>
+              <string>${{ steps.get_version.outputs.VERSION }}</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleSignature</key>
+              <string>????</string>
+              <key>CFBundleExecutable</key>
+              <string>$APP_NAME</string>
+              <key>CFBundleIconFile</key>
+              <string>icon.icns</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+
+          # Convert icon (simple approach for now, assuming icon.png exists)
+          # Requires iconutil which is standard on macOS, but needs .iconset folder. 
+          # Skipping complex icon generation for speed, just basic app bundle.
+
+          # Create DMG
+          create-dmg \
+            --volname "$APP_NAME Installer" \
+            --volicon "app/Assets/icon.ico" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "$APP_NAME.app" 200 190 \
+            --hide-extension "$APP_NAME.app" \
+            --app-drop-link 600 185 \
+            "publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.dmg" \
+            "$APP_DIR"
       - name: List Publish Dir (Debug)
         run: ls -R publish
         shell: bash
@@ -75,8 +220,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}
-          path: publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}${{ matrix.ext }}
-          if-no-files-found: error
+          path: |
+            publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.zip
+            publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.tar.gz
+            publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.dmg
+            publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}-setup.exe
+            publish/Tessera-${{ steps.get_version.outputs.VERSION }}-${{ matrix.rid }}.deb
+          if-no-files-found: warn
 
   release:
     name: Create Release
