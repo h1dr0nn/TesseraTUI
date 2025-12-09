@@ -281,7 +281,7 @@ public partial class SpreadsheetGrid : UserControl
         foreach (var row in rows)
         {
             // Find the row container (ListBoxItem for ListBox, ContentPresenter for ItemsControl)
-            var rowContainer = CellGrid.ContainerFromIndex(rowIndex) as Control;
+            var rowContainer = CellGrid.ContainerFromIndex(rowIndex) as ListBoxItem;
             if (rowContainer == null)
             {
                 rowIndex++;

@@ -164,6 +164,7 @@ public class TableViewModel : WorkspaceViewModel
             }
             return new TableRowViewModel(index, new ObservableCollection<TableCellViewModel>(cells));
         });
+        RaisePropertyChanged(nameof(Rows));
         
         // Update selection bounds after table data changes
         _selection.UpdateBounds(_tableViewAgent.Table.Rows.Count, _tableViewAgent.Table.Columns.Count);

@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
+
 using Tessera.ViewModels;
 
 namespace Tessera.Utils;
@@ -10,7 +10,7 @@ namespace Tessera.Utils;
 /// A virtualized collection that loads TableRowViewModels on demand.
 /// Implements IList and INotifyCollectionChanged for UI binding.
 /// </summary>
-public class VirtualizedRowCollection : IList<TableRowViewModel>, IList, INotifyCollectionChanged
+public class VirtualizedRowCollection : IList<TableRowViewModel>, IList
 {
     private readonly Func<int, TableRowViewModel> _rowGenerator;
     private readonly int _count;
@@ -18,7 +18,7 @@ public class VirtualizedRowCollection : IList<TableRowViewModel>, IList, INotify
     private readonly int _cacheSize = 1000; // Keep last 1000 accessed rows
     private readonly Queue<int> _cacheQueue = new();
 
-    public event NotifyCollectionChangedEventHandler? CollectionChanged;
+
 
     public VirtualizedRowCollection(int count, Func<int, TableRowViewModel> rowGenerator)
     {
