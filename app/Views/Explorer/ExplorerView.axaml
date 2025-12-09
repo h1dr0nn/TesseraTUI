@@ -15,7 +15,7 @@
 
     <UserControl.Resources>
         <!-- Adjust this margin to move text up/down globally. Format: Left,Top,Right,Bottom -->
-        <Thickness x:Key="TextOffsetMargin">0,4,0,0</Thickness>
+        <Thickness x:Key="TextOffsetMargin">0,0,0,0</Thickness>
     </UserControl.Resources>
 
     <Grid RowDefinitions="Auto,*,Auto">

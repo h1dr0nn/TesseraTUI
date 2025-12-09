@@ -52,3 +52,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Local/Temporary files
+*.log
+test_output.txt
+test_results.txt
+build_log.txt
+build_output.txt

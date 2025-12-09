@@ -17,10 +17,14 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var viewModel = new MainWindowViewModel();
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = viewModel,
             };
+            
+            // Apply saved theme after window is created
+            RequestedThemeVariant = viewModel.Settings.PreferredTheme;
         }
 
         base.OnFrameworkInitializationCompleted();

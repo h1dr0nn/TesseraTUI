@@ -280,8 +280,8 @@ public partial class SpreadsheetGrid : UserControl
         int rowIndex = 0;
         foreach (var row in rows)
         {
-            // Find the row container
-            var rowContainer = CellGrid.ContainerFromIndex(rowIndex) as ContentPresenter;
+            // Find the row container (ListBoxItem for ListBox, ContentPresenter for ItemsControl)
+            var rowContainer = CellGrid.ContainerFromIndex(rowIndex) as ListBoxItem;
             if (rowContainer == null)
             {
                 rowIndex++;
@@ -797,13 +797,14 @@ public partial class SpreadsheetGrid : UserControl
     {
         if (CellGrid?.ItemsSource is not System.Collections.IEnumerable) return null;
         
-        var rowContainer = CellGrid.ContainerFromIndex(row) as ContentPresenter;
+        // ListBox uses ListBoxItem, ItemsControl uses ContentPresenter
+        var rowContainer = CellGrid.ContainerFromIndex(row) as Control;
         if (rowContainer == null) return null;
         
         var cellsControl = FindChild<ItemsControl>(rowContainer);
         if (cellsControl == null) return null;
         
-        var cellContainer = cellsControl.ContainerFromIndex(col) as ContentPresenter;
+        var cellContainer = cellsControl.ContainerFromIndex(col) as Control;
         if (cellContainer == null) return null;
         
         return FindChild<Border>(cellContainer);

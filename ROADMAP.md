@@ -204,7 +204,7 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
 - Validation an toàn: sửa ở view nào cũng không gây lỗi dữ liệu.
 - Build ổn định đa nền tảng.
 - Unity Editor tích hợp trơn tru.
-- Hệ thống mở rộng lâu dài (formula
+- Hệ thống mở rộng lâu dài (formula, plugin, tooling).
 
 ---
 
