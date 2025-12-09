@@ -89,14 +89,9 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: Tessera-*
           path: artifacts
-
-      - name: Flatten Artifacts
-        run: |
-          find artifacts -type f -name "Tessera*" -exec mv {} artifacts/ \;
-          # Remove empty directories
-          find artifacts -type d -empty -delete
-        shell: bash
+          merge-multiple: true
 
       - name: Display Downloaded Files
         run: ls -R artifacts
