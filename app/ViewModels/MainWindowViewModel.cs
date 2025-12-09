@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Tessera.Core.Models;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace Tessera.ViewModels;
 
@@ -159,7 +160,7 @@ public class MainWindowViewModel : ViewModelBase
 
     private readonly DataSyncAgent _dataSyncAgent;
 
-    private void OnFileSelected(string path)
+    private async void OnFileSelected(string path)
     {
         _currentFilePath = path;
         CurrentFileName = Path.GetFileName(path);
@@ -168,11 +169,11 @@ public class MainWindowViewModel : ViewModelBase
         {
             if (File.Exists(path))
             {
-                var text = File.ReadAllText(path);
+                var text = await File.ReadAllTextAsync(path);
                 FileTextContent = text;
                 RaisePropertyChanged(nameof(FileTextContent));
 
-                LoadDataFromText(text, isInitialLoad: true);
+                await LoadDataFromTextAsync(text, isInitialLoad: true);
             }
         }
         catch (Exception ex)
@@ -183,46 +184,53 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void LoadDataFromText(string text, bool isInitialLoad = false)
+    private async Task LoadDataFromTextAsync(string text, bool isInitialLoad = false)
     {
         try
         {
-            // Parse CSV
-            var rows = ClipboardCsvHelper.Parse(text, _settingsAgent.DelimiterChar);
-            
-            if (rows.Count > 0)
+            // Parse CSV on background thread
+            var (tableModel, schemaModel) = await Task.Run(() => 
             {
-                // Assume first row is header
-                var headerRow = rows[0];
-                var dataRows = rows.Skip(1).ToList();
-
-                var columns = new List<ColumnModel>();
-                var columnSchemas = new List<ColumnSchema>();
-
-                for (int i = 0; i < headerRow.Count; i++)
+                var rows = ClipboardCsvHelper.Parse(text, _settingsAgent.DelimiterChar);
+                
+                if (rows.Count > 0)
                 {
-                    var header = headerRow[i] ?? $"Column {i + 1}";
-                    columns.Add(new ColumnModel(header));
-                    
-                    // Infer Data Type
-                    var inferredType = InferColumnType(dataRows, i);
-                    columnSchemas.Add(new ColumnSchema(header, inferredType, true)); 
-                }
+                    // Assume first row is header
+                    var headerRow = rows[0];
+                    var dataRows = rows.Skip(1).ToList();
 
-                var tableRows = new List<RowModel>();
-                foreach (var row in dataRows)
-                {
-                    // Ensure row has correct number of cells
-                    var cells = new List<string?>(row);
-                    while (cells.Count < columns.Count) cells.Add(null);
-                    while (cells.Count > columns.Count) cells.RemoveAt(cells.Count - 1);
+                    var columns = new List<ColumnModel>();
+                    var columnSchemas = new List<ColumnSchema>();
+
+                    for (int i = 0; i < headerRow.Count; i++)
+                    {
+                        var header = headerRow[i] ?? $"Column {i + 1}";
+                        columns.Add(new ColumnModel(header));
+                        
+                        // Infer Data Type
+                        var inferredType = InferColumnType(dataRows, i);
+                        columnSchemas.Add(new ColumnSchema(header, inferredType, true)); 
+                    }
+
+                    var tableRows = new List<RowModel>();
+                    foreach (var row in dataRows)
+                    {
+                        // Ensure row has correct number of cells
+                        var cells = new List<string?>(row);
+                        while (cells.Count < columns.Count) cells.Add(null);
+                        while (cells.Count > columns.Count) cells.RemoveAt(cells.Count - 1);
+                        
+                        tableRows.Add(new RowModel(cells));
+                    }
                     
-                    tableRows.Add(new RowModel(cells));
+                    return (new TableModel(columns, tableRows), new SchemaModel(columnSchemas));
                 }
                 
-                var tableModel = new TableModel(columns, tableRows);
-                var schemaModel = new SchemaModel(columnSchemas);
+                return (null, null);
+            });
 
+            if (tableModel != null && schemaModel != null)
+            {
                 _dataSyncAgent.LoadNewData(tableModel, schemaModel);
                 
                 if (isInitialLoad)
@@ -285,7 +293,7 @@ public class MainWindowViewModel : ViewModelBase
                 File.WriteAllText(_currentFilePath, FileTextContent);
                 
                 // CRITICAL FIX: Sync changes back to Data Model so other views (Table/Json) are updated
-                LoadDataFromText(FileTextContent, isInitialLoad: false);
+                await LoadDataFromTextAsync(FileTextContent, isInitialLoad: false);
             }
             else
             {

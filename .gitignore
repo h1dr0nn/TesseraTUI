@@ -58,3 +58,4 @@ nunit-*.xml
 test_output.txt
 test_results.txt
 build_log.txt
+build_output.txt

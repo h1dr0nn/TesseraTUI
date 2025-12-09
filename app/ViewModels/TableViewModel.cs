@@ -73,12 +73,12 @@ public class TableViewModel : WorkspaceViewModel
 
     public ObservableCollection<TableColumnViewModel> Columns { get; }
 
-    public ObservableCollection<TableRowViewModel> Rows 
+    public IList<TableRowViewModel> Rows 
     { 
         get => _rows; 
         private set => SetProperty(ref _rows, value); 
     }
-    private ObservableCollection<TableRowViewModel> _rows = new();
+    private IList<TableRowViewModel> _rows = new List<TableRowViewModel>();
 
     public UIToastAgent ToastAgent => _toastAgent;
     
@@ -151,24 +151,19 @@ public class TableViewModel : WorkspaceViewModel
             }
         }
 
-        // Rebuild Rows - REPLACE collection to avoid O(N) notification crash
-        // Rebuild Rows - REPLACE collection to avoid O(N) notification crash
-        var newRows = new ObservableCollection<TableRowViewModel>();
-        
-        foreach (var rowModel in _tableViewAgent.Table.Rows.Select((r, i) => (Model: r, Index: i)))
+        // Use VirtualizedRowCollection for lazy loading
+        Rows = new VirtualizedRowCollection(_tableViewAgent.Table.Rows.Count, index => 
         {
+            var rowModel = _tableViewAgent.Table.Rows[index];
             var cells = new List<TableCellViewModel>();
             for (var colIndex = 0; colIndex < _tableViewAgent.Table.Columns.Count; colIndex++)
             {
-                var cellValue = colIndex < rowModel.Model.Cells.Count ? rowModel.Model.Cells[colIndex] : "";
+                var cellValue = colIndex < rowModel.Cells.Count ? rowModel.Cells[colIndex] : "";
                 var column = colIndex < Columns.Count ? Columns[colIndex] : null;
-                cells.Add(new TableCellViewModel(_tableViewAgent, rowModel.Index, colIndex, cellValue, column));
+                cells.Add(new TableCellViewModel(_tableViewAgent, index, colIndex, cellValue, column));
             }
-
-            newRows.Add(new TableRowViewModel(rowModel.Index, new ObservableCollection<TableCellViewModel>(cells)));
-        }
-        
-        Rows = newRows;
+            return new TableRowViewModel(index, new ObservableCollection<TableCellViewModel>(cells));
+        });
         
         // Update selection bounds after table data changes
         _selection.UpdateBounds(_tableViewAgent.Table.Rows.Count, _tableViewAgent.Table.Columns.Count);
@@ -243,23 +238,19 @@ public class TableViewModel : WorkspaceViewModel
         _toastAgent.ShowToast($"Cleared {cells.Count} cells", ToastLevel.Success);
     }
 
-    private ObservableCollection<TableRowViewModel> BuildRowsFromModel()
+    private IList<TableRowViewModel> BuildRowsFromModel()
     {
-        var rows = new ObservableCollection<TableRowViewModel>();
-        for (var rowIndex = 0; rowIndex < _tableViewAgent.Table.Rows.Count; rowIndex++)
+        return new VirtualizedRowCollection(_tableViewAgent.Table.Rows.Count, index => 
         {
-            var rowModel = _tableViewAgent.Table.Rows[rowIndex];
+            var rowModel = _tableViewAgent.Table.Rows[index];
             var cells = new List<TableCellViewModel>();
             for (var colIndex = 0; colIndex < _tableViewAgent.Table.Columns.Count; colIndex++)
             {
                 var column = colIndex < Columns.Count ? Columns[colIndex] : null;
-                cells.Add(new TableCellViewModel(_tableViewAgent, rowIndex, colIndex, rowModel.Cells[colIndex], column));
+                cells.Add(new TableCellViewModel(_tableViewAgent, index, colIndex, rowModel.Cells[colIndex], column));
             }
-
-            rows.Add(new TableRowViewModel(rowIndex, new ObservableCollection<TableCellViewModel>(cells)));
-        }
-
-        return rows;
+            return new TableRowViewModel(index, new ObservableCollection<TableCellViewModel>(cells));
+        });
     }
     
     private async Task CopyAsync()
