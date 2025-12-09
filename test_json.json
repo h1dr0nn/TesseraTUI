@@ -1,0 +1,30 @@
+[
+    {
+        "id": 1,
+        "name": "Alpha",
+        "value": 123,
+        "active": true,
+        "tags": [
+            "a",
+            "b",
+            "c"
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Beta",
+        "value": 456,
+        "active": false,
+        "tags": [
+            "x",
+            "y"
+        ]
+    },
+    {
+        "id": 3,
+        "name": "Gamma",
+        "value": 789,
+        "active": true,
+        "tags": []
+    }
+]
