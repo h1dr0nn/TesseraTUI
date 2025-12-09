@@ -22,7 +22,7 @@ jobs:
           - os: macos-latest
             rid: osx-arm64
             ext: ""
-          - os: macos-13
+          - os: macos-15
             rid: osx-x64
             ext: ""
 
@@ -81,7 +81,7 @@ jobs:
   release:
     name: Create Release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/release-')
+    if: startsWith(github.ref, 'refs/tags/release-') || startsWith(github.ref, 'refs/tags/develop-')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -98,7 +98,11 @@ jobs:
 
       - name: Extract Version
         id: get_version
-        run: echo "VERSION=$(echo ${{ github.ref_name }} | sed 's/release-//')" >> $GITHUB_OUTPUT
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#release-}"
+          VERSION="${VERSION#develop-}"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -106,5 +110,5 @@ jobs:
           name: ${{ steps.get_version.outputs.VERSION }}
           tag_name: ${{ github.ref_name }}
           draft: false
-          prerelease: false
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/develop-') }}
           files: artifacts/*
