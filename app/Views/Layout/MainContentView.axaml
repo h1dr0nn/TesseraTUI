@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:editors="clr-namespace:Tessera.Views.Editors"
+             xmlns:views="clr-namespace:Tessera.Views"
              xmlns:settings="clr-namespace:Tessera.Views.Settings"
              xmlns:vm="clr-namespace:Tessera.ViewModels"
              xmlns:i="https://github.com/projektanker/icons.avalonia"
@@ -94,6 +95,9 @@
                      </DataTemplate>
                      <DataTemplate DataType="vm:JsonViewModel">
                         <editors:JsonView />
+                     </DataTemplate>
+                     <DataTemplate DataType="vm:GraphViewModel">
+                        <views:GraphView />
                      </DataTemplate>
                   </ContentControl.DataTemplates>
                 </ContentControl>

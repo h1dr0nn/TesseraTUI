@@ -54,7 +54,6 @@ public class JsonViewModel : WorkspaceViewModel
     public override string Title => "JSON View";
 
     // JSON icon geometry (mdi-code-json)
-    // JSON icon geometry (mdi-code-json)
     public override string IconName => "mdi-code-json";
 
     public override string Subtitle => "Work directly with JSON format";
@@ -100,6 +99,7 @@ public class JsonViewModel : WorkspaceViewModel
         {
             if (SetProperty(ref _editorText, value))
             {
+                Console.WriteLine($"[ViewModel] EditorText updated. Length: {value?.Length ?? 0}");
                 ScheduleValidation();
             }
         }

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia;
 using AvaloniaEdit;
 using AvaloniaEdit.Editing;
 using AvaloniaEdit.Highlighting;
@@ -42,7 +43,6 @@ public partial class JsonView : UserControl
             if (DataContext is JsonViewModel viewModel)
             {
                 // Syncing text
-
                 _isSyncing = true;
                 editor.Text = viewModel.EditorText;
                 _isSyncing = false;
@@ -95,15 +95,9 @@ public partial class JsonView : UserControl
             if (this.FindControl<TextEditor>("JsonEditor") is { } editor)
             {
                // Initial sync
-
                _isSyncing = true;
                editor.Text = vm.EditorText;
                _isSyncing = false;
-            }
-            else 
-            {
-                // JsonEditor control not found in OnDataContextChanged
-
             }
         }
     }
@@ -126,12 +120,10 @@ public partial class JsonView : UserControl
 
         if (e.PropertyName == nameof(JsonViewModel.EditorText))
         {
-
             if (DataContext is JsonViewModel vm && this.FindControl<TextEditor>("JsonEditor") is { } editor)
             {
                 if (editor.Text != vm.EditorText)
                 {
-
                     _isSyncing = true;
                     editor.Text = vm.EditorText;
                     _isSyncing = false;

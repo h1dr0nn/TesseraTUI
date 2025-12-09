@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Tessera.ViewModels"
+             xmlns:models="using:Tessera.Models.Graph"
+             xmlns:utils="using:Tessera.Utils"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="Tessera.Views.Editors.JsonGraphView">
+  
+  <UserControl.Resources>
+    <utils:EdgePathConverter x:Key="EdgeConverter" />
+  </UserControl.Resources>
+
+  <Grid Background="{DynamicResource PageBackgroundBrush}">
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+      <Panel Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" MinWidth="800" MinHeight="600">
+        
+        <!-- Edges Layer -->
+        <ItemsControl ItemsSource="{Binding Edges}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <Canvas />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Path Stroke="#666" StrokeThickness="1.5" Data="{Binding Converter={StaticResource EdgeConverter}}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Nodes Layer -->
+        <ItemsControl ItemsSource="{Binding Nodes}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <Canvas />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.Styles>
+            <Style Selector="ContentPresenter" x:DataType="models:GraphNode">
+              <Setter Property="Canvas.Left" Value="{Binding X}"/>
+              <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+            </Style>
+          </ItemsControl.Styles>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Width="{Binding Width}" 
+                      Height="{Binding Height}"
+                      Background="{DynamicResource SurfaceBrush}"
+                      BorderBrush="{DynamicResource BorderBrushLight}"
+                      BorderThickness="1"
+                      CornerRadius="4"
+                      BoxShadow="0 2 4 #20000000">
+                <Grid ColumnDefinitions="Auto, *, Auto" Margin="8,0">
+                  <!-- Type Indicator -->
+                  <Border Width="8" Height="8" CornerRadius="4" Margin="0,0,8,0" VerticalAlignment="Center" Tag="{Binding Type}">
+                     <Border.Styles>
+                       <Style Selector="Border">
+                         <!-- Default Primitive -->
+                         <Setter Property="Background" Value="#10B981" /> 
+                       </Style>
+                       <Style Selector="Border[Tag=Object]">
+                         <Setter Property="Background" Value="#3B82F6" />
+                       </Style>
+                       <Style Selector="Border[Tag=Array]">
+                         <Setter Property="Background" Value="#F59E0B" />
+                       </Style>
+                     </Border.Styles>
+                  </Border>
+
+                  <!-- Key -->
+                  <TextBlock Grid.Column="1" 
+                             Text="{Binding Key}" 
+                             FontWeight="SemiBold" 
+                             VerticalAlignment="Center" 
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             TextTrimming="CharacterEllipsis"/>
+                  
+                  <!-- Value (for primitives) -->
+                  <TextBlock Grid.Column="2" 
+                             Text="{Binding Value}" 
+                             Foreground="{DynamicResource TextSecondaryBrush}" 
+                             VerticalAlignment="Center" 
+                             Margin="8,0,0,0"
+                             IsVisible="{Binding Value, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                             TextTrimming="CharacterEllipsis"
+                             MaxWidth="150"/>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        
+      </Panel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -33,7 +33,7 @@ public class SchemaViewModel : WorkspaceViewModel
 
     // Tree/Structure icon geometry (mdi-sitemap)
     // Tree/Structure icon geometry (mdi-sitemap)
-    public override string IconName => "mdi-sitemap";
+    public override string IconName => "mdi-view-column";
 
     public override string Subtitle => "Define column rules and validation";
 

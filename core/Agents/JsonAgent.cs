@@ -76,21 +76,81 @@ public class JsonAgent
     public JsonModel BuildJsonFromTable(TableModel table, SchemaModel schema)
     {
         var records = new List<Dictionary<string, object?>>();
+        if (table.Rows.Count == 0 || table.Columns.Count == 0) return new JsonModel(records);
+
+        Dictionary<string, object?>? currentRecord = null;
+        // Track values for each column within the current "group" (record)
+        // Key: Column Name, Value: List of values encountered
+        var currentGroupValues = new Dictionary<string, List<object?>>();
 
         foreach (var row in table.Rows)
         {
-            var record = new Dictionary<string, object?>();
-            for (var i = 0; i < table.Columns.Count; i++)
+            // Determine if New Record: First column has value?
+            var isNewRecord = !string.IsNullOrWhiteSpace(row.Cells[0]);
+            
+            if (isNewRecord)
             {
-                var columnName = table.Columns[i].Name;
-                var schemaColumn = schema.Columns[i];
-                record[columnName] = ConvertValue(row.Cells[i], schemaColumn.Type);
+                // Flush previous
+                if (currentRecord != null)
+                {
+                    FinalizeRecord(currentRecord, currentGroupValues, records);
+                }
+
+                // Start new
+                currentRecord = new Dictionary<string, object?>();
+                currentGroupValues = new Dictionary<string, List<object?>>();
+                foreach (var col in schema.Columns) currentGroupValues[col.Name] = new List<object?>();
             }
 
-            records.Add(record);
+            if (currentRecord == null) continue; // Should not happen if first row has ID
+
+            // Collect values
+            for (var i = 0; i < table.Columns.Count; i++)
+            {
+                var colName = table.Columns[i].Name;
+                var rawValue = row.Cells[i];
+                var dataType = schema.Columns[i].Type;
+                
+                if (!string.IsNullOrWhiteSpace(rawValue))
+                {
+                    var converted = ConvertValue(rawValue, dataType);
+                    currentGroupValues[colName].Add(converted);
+                }
+            }
+        }
+
+        // Flush last
+        if (currentRecord != null)
+        {
+            FinalizeRecord(currentRecord, currentGroupValues, records);
         }
 
         return new JsonModel(records);
+    }
+
+    private void FinalizeRecord(Dictionary<string, object?> record, Dictionary<string, List<object?>> groupValues, List<Dictionary<string, object?>> records)
+    {
+        foreach (var kvp in groupValues)
+        {
+            var key = kvp.Key;
+            var values = kvp.Value;
+
+            if (values.Count == 0)
+            {
+                record[key] = null;
+            }
+            else if (values.Count == 1)
+            {
+                // Single value -> Scalar
+                record[key] = values[0];
+            }
+            else
+            {
+                // Multiple values -> Array
+                record[key] = values;
+            }
+        }
+        records.Add(record);
     }
 
     public TableModel BuildTableFromJson(JsonModel json, SchemaModel schema)
@@ -100,18 +160,64 @@ public class JsonAgent
 
         foreach (var record in json.Records)
         {
-            var cells = new List<string?>();
+            // 1. Analyze record to determine max rows needed
+            // Map: ColumnName -> List of Values (Scalar becomes single item list)
+            var columnData = new Dictionary<string, List<string?>>();
+            int maxDepth = 1;
+
             foreach (var column in schema.Columns)
             {
-                record.TryGetValue(column.Name, out var value);
-                cells.Add(value?.ToString());
+                var values = new List<string?>();
+                if (record.TryGetValue(column.Name, out var value))
+                {
+                   if (value is System.Collections.IEnumerable list && value is not string)
+                   {
+                       foreach (var item in list) values.Add(item?.ToString());
+                       if (values.Count == 0) values.Add(null); // Empty array placeholder
+                   }
+                   else
+                   {
+                       values.Add(value?.ToString());
+                   }
+                }
+                else
+                {
+                    values.Add(null);
+                }
+
+                columnData[column.Name] = values;
+                if (values.Count > maxDepth) maxDepth = values.Count;
             }
 
-            rows.Add(new RowModel(cells));
+            // 2. Generate Rows
+            for (int i = 0; i < maxDepth; i++)
+            {
+                var cells = new List<string?>();
+                foreach (var column in schema.Columns)
+                {
+                    var vals = columnData[column.Name];
+                    // Logic:
+                    // If it's a scalar (count 1), only show on Row 0 (i=0).
+                    // If it's an array (count > 1 or identified as list), map index.
+                    
+                    if (vals.Count > 1)
+                    {
+                        // Array: show if index exists in bounds
+                        cells.Add(i < vals.Count ? vals[i] : null);
+                    }
+                    else
+                    {
+                        // Scalar (or empty list): show only on first row
+                         cells.Add(i == 0 && vals.Count > 0 ? vals[0] : null);
+                    }
+                }
+                rows.Add(new RowModel(cells));
+            }
         }
 
         return new TableModel(columns, rows);
     }
+
 
     public JsonDiffResult BuildDiff(JsonModel current, JsonModel updated, SchemaModel schema)
     {
@@ -189,16 +295,38 @@ public class JsonAgent
 
     private static object? ConvertElement(JsonElement element)
     {
-        return element.ValueKind switch
+        switch (element.ValueKind)
         {
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.Number when element.TryGetInt64(out var l) => l,
-            JsonValueKind.Number => element.GetDouble(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null => null,
-            _ => element.GetRawText(),
-        };
+            case JsonValueKind.Object:
+                var dict = new Dictionary<string, object?>();
+                foreach (var prop in element.EnumerateObject())
+                {
+                    dict[prop.Name] = ConvertElement(prop.Value);
+                }
+                return dict;
+
+            case JsonValueKind.Array:
+                var list = new List<object?>();
+                foreach (var item in element.EnumerateArray())
+                {
+                    list.Add(ConvertElement(item));
+                }
+                return list;
+
+            case JsonValueKind.String:
+                return element.GetString();
+            case JsonValueKind.Number:
+                if (element.TryGetInt64(out var l)) return l;
+                return element.GetDouble();
+            case JsonValueKind.True:
+                return true;
+            case JsonValueKind.False:
+                return false;
+            case JsonValueKind.Null:
+                return null;
+            default:
+                return element.GetRawText();
+        }
     }
 
     private static object? ConvertValue(string? value, DataType dataType)

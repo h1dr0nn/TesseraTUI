@@ -23,6 +23,9 @@ public class MainWindowViewModel : ViewModelBase
     private readonly UIToastAgent _toastAgent = new();
     private readonly NavigationAgent _navigationAgent = new();
     private readonly HistoryAgent _historyAgent = new();
+    // _dataSyncAgent and _jsonAgent are defined lower down in original file, but let's keep it consistent.
+    // The previous tool call replaced lines around 161. 
+    // I will check the file content first to be safe.
 
     private string _currentFileName = "No file opened";
     private WorkspaceStatus _status = WorkspaceStatus.Idle;
@@ -37,26 +40,31 @@ public class MainWindowViewModel : ViewModelBase
     public TableViewModel TableViewModel { get; }
     public SchemaViewModel SchemaViewModel { get; }
     public JsonViewModel JsonViewModel { get; }
+    public GraphViewModel GraphViewModel { get; }
 
     public MainWindowViewModel()
     {
         _settingsAgent.ThemeChanged += ApplyTheme;
 
         var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateEmptyWorkspace();
+        _jsonAgent = jsonAgent;
         _dataSyncAgent = new DataSyncAgent(table, schema, json, validator, jsonAgent);
         
+        // Initialize Child ViewModels
+        FileExplorer = new FileExplorerViewModel();
+        FileExplorer.FileSelected += OnFileSelected;
+        
+        // Tab Layout
         TableViewModel = new TableViewModel(_settingsAgent, _dataSyncAgent, _historyAgent);
         SchemaViewModel = new SchemaViewModel(_dataSyncAgent);
         JsonViewModel = new JsonViewModel(_dataSyncAgent, validator, jsonAgent, _toastAgent);
+        GraphViewModel = new GraphViewModel(_dataSyncAgent, jsonAgent);
 
         _navigationAgent.RegisterView(TableViewModel);
         _navigationAgent.RegisterView(SchemaViewModel);
         _navigationAgent.RegisterView(JsonViewModel);
+        _navigationAgent.RegisterView(GraphViewModel);
         _navigationAgent.ActiveViewChanged += SyncActiveViewState;
-
-        // Initialize Child ViewModels
-        FileExplorer = new FileExplorerViewModel();
-        FileExplorer.FileSelected += OnFileSelected;
 
         SettingsViewModel = new SettingsViewModel(_settingsAgent);
 
@@ -159,6 +167,9 @@ public class MainWindowViewModel : ViewModelBase
     }
 
     private readonly DataSyncAgent _dataSyncAgent;
+    private readonly JsonAgent _jsonAgent;
+
+
 
     private async void OnFileSelected(string path)
     {
@@ -188,9 +199,22 @@ public class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            // Parse CSV on background thread
             var (tableModel, schemaModel) = await Task.Run(() => 
             {
+                // 1. Try JSON Parsing first if it looks like JSON
+                var trimmed = text.TrimStart();
+                if (trimmed.StartsWith("[") || trimmed.StartsWith("{"))
+                {
+                    var jsonResult = _jsonAgent.Parse(text);
+                    if (jsonResult.IsValid && jsonResult.Model != null)
+                    {
+                        var jsonSchema = InferSchemaFromJson(jsonResult.Model);
+                        var jsonTable = _jsonAgent.BuildTableFromJson(jsonResult.Model, jsonSchema);
+                        return (jsonTable, jsonSchema);
+                    }
+                }
+
+                // 2. Fallback to CSV Parsing
                 var rows = ClipboardCsvHelper.Parse(text, _settingsAgent.DelimiterChar);
                 
                 if (rows.Count > 0)
@@ -226,7 +250,7 @@ public class MainWindowViewModel : ViewModelBase
                     return (new TableModel(columns, tableRows), new SchemaModel(columnSchemas));
                 }
                 
-                return (null, null);
+                return ((TableModel?)null, (SchemaModel?)null);
             });
 
             if (tableModel != null && schemaModel != null)
@@ -235,13 +259,16 @@ public class MainWindowViewModel : ViewModelBase
                 
                 if (isInitialLoad)
                 {
-                     _dataSyncAgent.TableChanged += OnTableChanged;
+                     _dataSyncAgent.NotifyTableChanged(); // Explicitly notify
+                     // _dataSyncAgent.LoadNewData calls NotifyTableChanged internaly via TableChanged?.Invoke()
+                     // but let's be safe as LoadNewData implementations vary
+                     
                      _toastAgent.ShowToast($"Opened {CurrentFileName}", ToastLevel.Success);
                 }
             }
             else
             {
-                 if (isInitialLoad) _toastAgent.ShowToast("File is empty", ToastLevel.Warning);
+                 if (isInitialLoad) _toastAgent.ShowToast("File is empty or format not recognized", ToastLevel.Warning);
             }
         }
         catch (Exception ex)
@@ -251,7 +278,104 @@ public class MainWindowViewModel : ViewModelBase
             {
                 _toastAgent.ShowToast($"Warning: Could not sync data model: {ex.Message}", ToastLevel.Warning);
             }
+            else 
+            {
+                _toastAgent.ShowToast($"Error parsing file: {ex.Message}", ToastLevel.Error);
+            }
         }
+    }
+
+    private SchemaModel InferSchemaFromJson(JsonModel model)
+    {
+        // 1. Collect all unique keys
+        var keys = new List<string>();
+        foreach (var record in model.Records)
+        {
+            foreach (var key in record.Keys)
+            {
+                if (!keys.Contains(key)) keys.Add(key);
+            }
+        }
+
+        // 2. Infer types for each key
+        var schemas = new List<ColumnSchema>();
+        foreach (var key in keys)
+        {
+            var values = model.Records.Select(r => r.TryGetValue(key, out var v) ? v : null).ToList();
+            var type = InferTypeFromValues(values);
+            schemas.Add(new ColumnSchema(key, type, true));
+        }
+
+        return new SchemaModel(schemas);
+    }
+
+    private DataType InferTypeFromValues(List<object?> values)
+    {
+        bool canBeInt = true;
+        bool canBeFloat = true;
+        bool canBeBool = true;
+        bool canBeDate = true;
+        bool hasValues = false;
+
+        foreach (var val in values)
+        {
+            if (val == null) continue;
+            hasValues = true;
+
+            // Strict Type Checks based on JSON types
+            if (val is long) 
+            {
+                // Int fits in Float, forbids Bool/Date (unless ts?)
+                canBeBool = false;
+                canBeDate = false; 
+                // Any number breaks date parsing usually unless distinct
+            }
+            else if (val is double)
+            {
+                canBeInt = false;
+                canBeBool = false;
+                canBeDate = false;
+            }
+            else if (val is bool)
+            {
+                canBeInt = false;
+                canBeFloat = false;
+                canBeDate = false;
+            }
+            else if (val is string s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) continue;
+                
+                // If it's a string, it kills Int/Float/Bool direct typing unless we want to parse strings inside JSON?
+                // Usually JSON is typed. If we see a string "123", should it be Int?
+                // For now, let's assume if it is a string in JSON, it is a String or Date.
+                canBeInt = false;
+                canBeFloat = false;
+                canBeBool = false;
+
+                if (canBeDate && !DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                {
+                    canBeDate = false;
+                }
+            }
+            else
+            {
+                // Complex object or array -> Treat as String (serialized) or fail?
+                // For this simple tabular view, let's treat as String.
+                return DataType.String;
+            }
+
+            if (!canBeInt && !canBeFloat && !canBeBool && !canBeDate) return DataType.String;
+        }
+
+        if (!hasValues) return DataType.String;
+
+        if (canBeInt) return DataType.Int;
+        if (canBeFloat) return DataType.Float;
+        if (canBeBool) return DataType.Bool;
+        if (canBeDate) return DataType.Date;
+
+        return DataType.String;
     }
 
     private void OnTableChanged()
