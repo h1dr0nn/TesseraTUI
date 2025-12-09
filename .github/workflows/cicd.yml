@@ -117,8 +117,9 @@ jobs:
 
           # Create Deb Structure
           VERSION="${{ steps.get_version.outputs.VERSION }}"
+          DEB_VERSION="${VERSION#v}"
           ARCH="amd64" # Approximating for linux-x64
-          DEB_DIR="Tessera_${VERSION}_${ARCH}"
+          DEB_DIR="Tessera_${DEB_VERSION}_${ARCH}"
           mkdir -p "$DEB_DIR/DEBIAN"
           mkdir -p "$DEB_DIR/usr/bin"
           mkdir -p "$DEB_DIR/usr/share/applications"
@@ -130,7 +131,7 @@ jobs:
           # Create Control File
           cat > "$DEB_DIR/DEBIAN/control" <<EOF
           Package: tessera
-          Version: $VERSION
+          Version: $DEB_VERSION
           Section: utils
           Priority: optional
           Architecture: $ARCH
