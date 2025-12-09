@@ -31,7 +31,6 @@ public class JsonGraphViewModel : ViewModelBase
 
     public void LoadJson(string json)
     {
-        Console.WriteLine($"[Graph] Loading JSON: {json.Substring(0, Math.Min(json.Length, 50))}...");
         Nodes.Clear();
         Edges.Clear();
 
