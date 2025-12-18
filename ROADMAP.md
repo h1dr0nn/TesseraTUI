@@ -140,20 +140,24 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
 
 ### 🧮 **Phase 8 — Formula Engine (Basic)**
 
-**Status: Pending**
+**Status: Completed** ✅
 
-- [ ] Công thức cơ bản:
-  - SUM
-- [ ] Support reference kiểu column-based.
-- [ ] Recalc khi cell thay đổi.
-- [ ] Circular detection đơn giản.
-- [ ] View preview kết quả ngay trong Table.
-- [ ] Tách phần tính toán nặng sang module Rust tăng tốc:
-  - [ ] Create `Tessera.Native` (Rust)
-  - [ ] Export basic formula functions (FFI)
-  - [ ] C# wrapper trong Unified Data Core
-  - [ ] Benchmark hiệu năng so với C# thuần
-- [ ] Fallback gracefully nếu module native không chạy.
+- [x] Công thức cơ bản:
+  - [x] SUM
+  - [x] AVG
+  - [x] MIN/MAX
+  - [x] COUNT
+  - etc
+- [x] Support reference kiểu column-based.
+- [x] Recalc khi cell thay đổi.
+- [x] Circular detection đơn giản.
+- [x] View preview kết quả ngay trong Table.
+- [x] Tách phần tính toán nặng sang module Rust tăng tốc:
+  - [x] Create `Tessera.Native` (Rust)
+  - [x] Export basic formula functions (FFI)
+  - [x] C# wrapper trong Unified Data Core
+  - [ ] Benchmark hiệu năng so với C# thuần (sẽ làm trong Phase 10)
+- [x] Fallback gracefully nếu module native không chạy.
 
 ---
 

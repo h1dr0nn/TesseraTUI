@@ -38,6 +38,35 @@ public class TableViewAgent
 
     public SchemaModel Schema => _dataSyncAgent.Schema;
 
+    /// <summary>
+    /// Get display value for a cell (handles formulas - shows computed result instead of formula string)
+    /// </summary>
+    public string? GetCellDisplayValue(int rowIndex, int columnIndex)
+    {
+        return _dataSyncAgent.GetCellDisplayValue(rowIndex, columnIndex);
+    }
+
+    /// <summary>
+    /// Get raw value for a cell (formula string if formula, actual value if regular cell)
+    /// Used when editing - user should edit the formula string, not the computed result
+    /// </summary>
+    public string? GetCellRawValue(int rowIndex, int columnIndex)
+    {
+        if (rowIndex < 0 || rowIndex >= Table.Rows.Count)
+        {
+            return null;
+        }
+
+        var row = Table.Rows[rowIndex];
+        if (columnIndex < 0 || columnIndex >= row.Cells.Count)
+        {
+            return null;
+        }
+
+        // Return the actual cell value from table (which contains formula string if it's a formula)
+        return row.Cells[columnIndex];
+    }
+
     public bool TryCommitEdit(int rowIndex, int columnIndex, string? newValue, out string? normalizedValue, out string? errorMessage)
     {
         var oldValue = _dataSyncAgent.Table.Rows[rowIndex].Cells[columnIndex];

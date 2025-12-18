@@ -158,7 +158,8 @@ public class TableViewModel : WorkspaceViewModel
             var cells = new List<TableCellViewModel>();
             for (var colIndex = 0; colIndex < _tableViewAgent.Table.Columns.Count; colIndex++)
             {
-                var cellValue = colIndex < rowModel.Cells.Count ? rowModel.Cells[colIndex] : "";
+                // Get display value (computed for formulas, raw value for regular cells)
+                var cellValue = _tableViewAgent.GetCellDisplayValue(index, colIndex) ?? "";
                 var column = colIndex < Columns.Count ? Columns[colIndex] : null;
                 cells.Add(new TableCellViewModel(_tableViewAgent, index, colIndex, cellValue, column));
             }
@@ -194,6 +195,23 @@ public class TableViewModel : WorkspaceViewModel
     /// Event fired when selection visual needs to be updated.
     /// </summary>
     public event Action? SelectionVisualChanged;
+    
+    /// <summary>
+    /// Get display value for a cell (handles formulas - shows computed result)
+    /// </summary>
+    public string? GetCellDisplayValue(int rowIndex, int columnIndex)
+    {
+        return _tableViewAgent.GetCellDisplayValue(rowIndex, columnIndex);
+    }
+
+    /// <summary>
+    /// Get raw value for a cell (formula string if formula, actual value if regular cell)
+    /// Used when editing
+    /// </summary>
+    public string? GetCellRawValue(int rowIndex, int columnIndex)
+    {
+        return _tableViewAgent.GetCellRawValue(rowIndex, columnIndex);
+    }
     
     /// <summary>
     /// Select the entire row where the current cell is located.
@@ -247,8 +265,10 @@ public class TableViewModel : WorkspaceViewModel
             var cells = new List<TableCellViewModel>();
             for (var colIndex = 0; colIndex < _tableViewAgent.Table.Columns.Count; colIndex++)
             {
+                // Get display value (computed for formulas, raw value for regular cells)
+                var cellValue = _tableViewAgent.GetCellDisplayValue(index, colIndex) ?? "";
                 var column = colIndex < Columns.Count ? Columns[colIndex] : null;
-                cells.Add(new TableCellViewModel(_tableViewAgent, index, colIndex, rowModel.Cells[colIndex], column));
+                cells.Add(new TableCellViewModel(_tableViewAgent, index, colIndex, cellValue, column));
             }
             return new TableRowViewModel(index, new ObservableCollection<TableCellViewModel>(cells));
         });

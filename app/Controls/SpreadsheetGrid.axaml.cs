@@ -441,10 +441,26 @@ public partial class SpreadsheetGrid : UserControl
         // Get actual cell width
         var cellWidth = cellBorder.Bounds.Width > 0 ? cellBorder.Bounds.Width : DefaultCellWidth;
         
+        // Get raw value (formula string if formula, or actual value if regular cell)
+        string? editText = initialText;
+        if (editText == null && ViewModel != null)
+        {
+            var (row, col) = GetCellPosition(cellVm);
+            if (row >= 0 && col >= 0)
+            {
+                // Get raw value from table (formula string or actual value)
+                editText = ViewModel.GetCellRawValue(row, col) ?? cellVm.Value;
+            }
+            else
+            {
+                editText = cellVm.Value;
+            }
+        }
+        
         // Create inline TextBox for editing
         var textBox = new TextBox
         {
-            Text = initialText ?? cellVm.Value ?? "",
+            Text = editText ?? "",
             Width = cellWidth,
             Height = CellHeight,
             Padding = new Thickness(8, 4),
@@ -465,6 +481,8 @@ public partial class SpreadsheetGrid : UserControl
             if (e.Key == Key.Enter)
             {
                 cellVm.Value = textBox.Text;
+                // Refresh UI to show computed result if formula
+                RefreshCellDisplay(cellBorder, cellVm);
                 EndCellEdit(cellBorder, cellVm);
                 e.Handled = true;
             }
@@ -473,13 +491,26 @@ public partial class SpreadsheetGrid : UserControl
                 EndCellEdit(cellBorder, cellVm);
                 e.Handled = true;
             }
+            else if (e.Key == Key.Tab)
+            {
+                // Commit and move to next cell
+                cellVm.Value = textBox.Text;
+                RefreshCellDisplay(cellBorder, cellVm);
+                EndCellEdit(cellBorder, cellVm);
+                // Move to next cell (handled by grid navigation)
+                e.Handled = false;
+            }
         };
         
         textBox.LostFocus += (s, e) =>
         {
             cellVm.Value = textBox.Text;
+            RefreshCellDisplay(cellBorder, cellVm);
             EndCellEdit(cellBorder, cellVm);
         };
+        
+        // Add autocomplete for formulas
+        AddFormulaAutocomplete(textBox, cellVm);
         
         // Replace cell content with TextBox
         cellBorder.Child = textBox;
@@ -490,18 +521,70 @@ public partial class SpreadsheetGrid : UserControl
         }
     }
     
+    private void RefreshCellDisplay(Border cellBorder, TableCellViewModel cellVm)
+    {
+        // Force refresh the cell value to get computed result if it's a formula
+        // Wait for the commit to complete, then refresh
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ViewModel != null)
+            {
+                var (row, col) = GetCellPosition(cellVm);
+                if (row >= 0 && col >= 0 && row < ViewModel.Rows.Count && col < ViewModel.Rows[row].Cells.Count)
+                {
+                    // Get the updated display value from agent (computed result for formulas)
+                    var displayValue = ViewModel.GetCellDisplayValue(row, col);
+                    var cell = ViewModel.Rows[row].Cells[col];
+                    
+                    // Refresh the cell's display value
+                    if (cell != null && displayValue != cell.Value)
+                    {
+                        cell.RefreshValue(displayValue);
+                    }
+                }
+            }
+        }, DispatcherPriority.Render);
+    }
+    
     private void EndCellEdit(Border cellBorder, TableCellViewModel cellVm)
     {
-        // Restore display mode
+        // Get display value (computed result for formulas, raw value for regular cells)
+        string? displayText = cellVm.Value;
+        if (ViewModel != null)
+        {
+            var (row, col) = GetCellPosition(cellVm);
+            if (row >= 0 && col >= 0)
+            {
+                displayText = ViewModel.GetCellDisplayValue(row, col) ?? cellVm.Value;
+            }
+        }
+        
+        // Restore display mode with computed value
         cellBorder.Child = new TextBlock
         {
-            Text = cellVm.Value ?? "",
+            Text = displayText ?? "",
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             Padding = new Thickness(8, 4),
             TextTrimming = TextTrimming.CharacterEllipsis
         };
         
         Focus();
+    }
+    
+    private void AddFormulaAutocomplete(TextBox textBox, TableCellViewModel cellVm)
+    {
+        if (ViewModel == null) return;
+        
+        // Simple watermark/hint instead of complex popup
+        // User can see available functions in tooltip or just type
+        textBox.Watermark = "Type =SUM(ColumnName) for formulas";
+        
+        // Add tooltip with available functions
+        var tooltip = new ToolTip
+        {
+            Content = "Available functions: SUM, AVG, MIN, MAX, COUNT\nExample: =SUM(Price)"
+        };
+        ToolTip.SetTip(textBox, tooltip);
     }
     
     private (int Row, int Col) GetCellPosition(TableCellViewModel cellVm)

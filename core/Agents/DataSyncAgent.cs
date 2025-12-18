@@ -9,16 +9,22 @@ namespace Tessera.Core.Agents;
 public class DataSyncAgent
 {
     private readonly JsonAgent _jsonAgent;
+    private readonly FormulaAgent _formulaAgent;
 
     public DataSyncAgent(
         TableModel table,
         SchemaModel schema,
         JsonModel json,
         ValidationAgent? validationAgent = null,
-        JsonAgent? jsonAgent = null)
+        JsonAgent? jsonAgent = null,
+        FormulaAgent? formulaAgent = null)
     {
         _jsonAgent = jsonAgent ?? new JsonAgent();
         Validator = validationAgent ?? new ValidationAgent(_jsonAgent);
+        _formulaAgent = formulaAgent ?? new FormulaAgent();
+
+        // Subscribe to formula calculation events
+        _formulaAgent.FormulaCalculated += OnFormulaCalculated;
 
         EnsureTableMatchesSchema(table, schema);
         Table = table;
@@ -34,6 +40,8 @@ public class DataSyncAgent
 
     public ValidationAgent Validator { get; }
 
+    public FormulaAgent FormulaAgent => _formulaAgent;
+
     public event Action? TableChanged;
     
     public void NotifyTableChanged() => TableChanged?.Invoke();
@@ -43,6 +51,8 @@ public class DataSyncAgent
         EnsureTableMatchesSchema(table, schema);
         Table = table;
         Schema = schema;
+        _formulaAgent.ClearAll();
+        RecalculateAllFormulas();
         RecalculateSchemaStats();
         Json = _jsonAgent.BuildJsonFromTable(table, schema);
         TableChanged?.Invoke();
@@ -98,15 +108,6 @@ public class DataSyncAgent
             return false;
         }
 
-        var validation = Validator.ValidateCell(Schema, columnIndex, newValue);
-        if (!validation.IsValid)
-        {
-            errorMessage = validation.Message;
-            return false;
-        }
-
-        normalizedValue = validation.NormalizedValue;
-
         var row = Table.Rows[rowIndex];
         if (columnIndex < 0 || columnIndex >= row.Cells.Count)
         {
@@ -114,7 +115,71 @@ public class DataSyncAgent
             return false;
         }
 
-        row.Cells[columnIndex] = normalizedValue;
+        // Check if this is a formula
+        if (!string.IsNullOrWhiteSpace(newValue) && newValue.Trim().StartsWith('='))
+        {
+            var formula = newValue.Trim();
+            
+            // Check for circular dependency before setting
+            var tempFormulaAgent = new FormulaAgent();
+            tempFormulaAgent.SetFormula(rowIndex, columnIndex, formula);
+            if (tempFormulaAgent.HasCircularDependency(rowIndex, columnIndex))
+            {
+                errorMessage = "Circular dependency detected in formula";
+                return false;
+            }
+
+            // Set formula in FormulaAgent
+            _formulaAgent.SetFormula(rowIndex, columnIndex, formula);
+
+            // Calculate formula result
+            var (result, calcError) = _formulaAgent.CalculateFormula(rowIndex, columnIndex, Table, Schema);
+            if (calcError != null)
+            {
+                errorMessage = calcError;
+                return false;
+            }
+
+            // Store formula string in cell (not the result)
+            row.Cells[columnIndex] = formula;
+            normalizedValue = formula;
+
+            // Validate the calculated result against schema (type check only, no normalization)
+            // This ensures the formula result is compatible with column type
+            var validation = Validator.ValidateCell(Schema, columnIndex, result);
+            if (!validation.IsValid)
+            {
+                errorMessage = $"Formula result validation failed: {validation.Message}";
+                // Formula is already stored, but mark as invalid
+                return false;
+            }
+
+            // Recalculate dependent formulas
+            _formulaAgent.RecalculateDependentCells(rowIndex, columnIndex, Table, Schema);
+        }
+        else
+        {
+            // Regular cell update (not a formula)
+            // Clear formula if it existed
+            if (_formulaAgent.HasFormula(rowIndex, columnIndex))
+            {
+                _formulaAgent.ClearFormula(rowIndex, columnIndex);
+            }
+
+            var validation = Validator.ValidateCell(Schema, columnIndex, newValue);
+            if (!validation.IsValid)
+            {
+                errorMessage = validation.Message;
+                return false;
+            }
+
+            normalizedValue = validation.NormalizedValue;
+            row.Cells[columnIndex] = normalizedValue;
+
+            // Recalculate formulas that might depend on this cell
+            _formulaAgent.RecalculateDependentCells(rowIndex, columnIndex, Table, Schema);
+        }
+
         RecalculateSchemaStats();
         Json = _jsonAgent.BuildJsonFromTable(Table, Schema);
         TableChanged?.Invoke();
@@ -123,16 +188,50 @@ public class DataSyncAgent
 
     public bool TryUpdateSchema(int columnIndex, ColumnSchema updatedSchema, out ValidationReport report)
     {
-        report = Validator.ValidateColumn(Table, columnIndex, updatedSchema);
+        // Build validation report, but skip formula cells (they shouldn't be normalized)
+        var errors = new List<ValidationError>();
+        var normalized = new List<string?>();
+
+        for (var rowIndex = 0; rowIndex < Table.Rows.Count; rowIndex++)
+        {
+            var row = Table.Rows[rowIndex];
+            var cellValue = row.Cells.ElementAtOrDefault(columnIndex);
+            
+            // Skip validation/normalization for formula cells
+            if (!string.IsNullOrWhiteSpace(cellValue) && cellValue.Trim().StartsWith('='))
+            {
+                normalized.Add(cellValue); // Keep formula as-is
+                continue;
+            }
+            
+            var result = Validator.ValidateCell(updatedSchema, cellValue);
+            if (!result.IsValid)
+            {
+                errors.Add(new ValidationError(rowIndex, result.Message ?? "Invalid value"));
+                normalized.Add(cellValue);
+                continue;
+            }
+
+            normalized.Add(result.NormalizedValue);
+        }
+
+        report = new ValidationReport(errors.Count == 0, errors, normalized);
         if (!report.IsValid)
         {
             return false;
         }
 
+        // Apply normalized values, but preserve formulas
         for (var rowIndex = 0; rowIndex < Table.Rows.Count; rowIndex++)
         {
             var row = Table.Rows[rowIndex];
-            row.Cells[columnIndex] = report.NormalizedValues.ElementAtOrDefault(rowIndex);
+            var normalizedValue = report.NormalizedValues.ElementAtOrDefault(rowIndex);
+            
+            // Only update if not a formula (formulas are already in normalized list as-is)
+            if (normalizedValue != null && !normalizedValue.Trim().StartsWith('='))
+            {
+                row.Cells[columnIndex] = normalizedValue;
+            }
         }
 
         Schema.Columns[columnIndex] = updatedSchema;
@@ -164,11 +263,24 @@ public class DataSyncAgent
         {
             var col = Schema.Columns[i];
             var values = new List<string?>();
-            foreach (var row in Table.Rows)
+            
+            // Collect values, using display values for formula cells
+            for (int rowIndex = 0; rowIndex < Table.Rows.Count; rowIndex++)
             {
+                var row = Table.Rows[rowIndex];
                 if (row.Cells.Count > i)
                 {
-                    values.Add(row.Cells[i]);
+                    var cellValue = row.Cells[i];
+                    // If this is a formula, get the computed display value instead
+                    if (_formulaAgent.HasFormula(rowIndex, i))
+                    {
+                        var displayValue = GetCellDisplayValue(rowIndex, i);
+                        values.Add(displayValue);
+                    }
+                    else
+                    {
+                        values.Add(cellValue);
+                    }
                 }
             }
 
@@ -216,6 +328,13 @@ public class DataSyncAgent
             for (var i = 0; i < row.Cells.Count; i++)
             {
                 var value = row.Cells[i];
+                // Skip validation for formula cells (they contain formula strings, not values)
+                // Formula validation happens when calculating the result
+                if (!string.IsNullOrWhiteSpace(value) && value.Trim().StartsWith('='))
+                {
+                    continue;
+                }
+                
                 if (!IsValueCompatible(value, schema.Columns[i].Type))
                 {
                     throw new InvalidOperationException($"Value '{value}' is incompatible with schema type {schema.Columns[i].Type}.");
@@ -258,4 +377,66 @@ public class DataSyncAgent
         return false;
     }
 
+    /// <summary>
+    /// Recalculate all formulas in the table
+    /// </summary>
+    public void RecalculateAllFormulas()
+    {
+        var formulas = _formulaAgent.GetAllFormulas();
+        foreach (var ((row, col), formula) in formulas)
+        {
+            var (result, error) = _formulaAgent.CalculateFormula(row, col, Table, Schema);
+            if (error == null && result != null)
+            {
+                // Update cell with calculated result (but keep formula in FormulaAgent)
+                var rowModel = Table.Rows[row];
+                if (col < rowModel.Cells.Count)
+                {
+                    // Validate result before storing
+                    var validation = Validator.ValidateCell(Schema, col, result);
+                    if (validation.IsValid)
+                    {
+                        rowModel.Cells[col] = formula; // Store formula, FormulaAgent tracks computed value
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Get computed value for a cell (handles formulas)
+    /// </summary>
+    public string? GetCellDisplayValue(int rowIndex, int columnIndex)
+    {
+        if (_formulaAgent.HasFormula(rowIndex, columnIndex))
+        {
+            var (result, error) = _formulaAgent.CalculateFormula(rowIndex, columnIndex, Table, Schema);
+            if (error != null)
+            {
+                return $"#ERROR: {error}";
+            }
+            return result;
+        }
+
+        // Regular cell value
+        if (rowIndex >= 0 && rowIndex < Table.Rows.Count)
+        {
+            var row = Table.Rows[rowIndex];
+            if (columnIndex >= 0 && columnIndex < row.Cells.Count)
+            {
+                return row.Cells[columnIndex];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Event handler when formula is calculated
+    /// </summary>
+    private void OnFormulaCalculated((int row, int col) cell, string? result)
+    {
+        // Formula result is already computed, just notify UI
+        TableChanged?.Invoke();
+    }
 }

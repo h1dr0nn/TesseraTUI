@@ -1,0 +1,11 @@
+[package]
+name = "tessera-native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "tessera_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+
