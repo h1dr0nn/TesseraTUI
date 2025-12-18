@@ -33,6 +33,26 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: brew install create-dmg
 
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            native/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build Rust native library
+        working-directory: native
+        run: cargo build --release
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -40,6 +60,20 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore app/app.csproj
+
+      - name: Copy native library to output
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            mkdir -p app/bin/Release/net9.0
+            cp native/target/release/tessera_native.dll app/bin/Release/net9.0/ || true
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            mkdir -p app/bin/Release/net9.0
+            cp native/target/release/libtessera_native.dylib app/bin/Release/net9.0/ || true
+          elif [[ "${{ runner.os }}" == "Linux" ]]; then
+            mkdir -p app/bin/Release/net9.0
+            cp native/target/release/libtessera_native.so app/bin/Release/net9.0/ || true
+          fi
 
       - name: Publish
         shell: bash
