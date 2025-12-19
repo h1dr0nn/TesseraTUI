@@ -46,6 +46,16 @@ public class MainWindowViewModel : ViewModelBase
         var (table, schema, json, validator, jsonAgent) = SampleDataFactory.CreateEmptyWorkspace();
         _jsonAgent = jsonAgent;
         _dataSyncAgent = new DataSyncAgent(table, schema, json, validator, jsonAgent);
+        _dataSyncAgent.ArrayDisplayMultiLine = _settingsAgent.ArrayDisplayMultiLine;
+        
+        // Subscribe to settings changes
+        _settingsAgent.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsAgent.ArrayDisplayMultiLine))
+            {
+                _dataSyncAgent.ArrayDisplayMultiLine = _settingsAgent.ArrayDisplayMultiLine;
+            }
+        };
         
         // Initialize Child ViewModels
         FileExplorer = new FileExplorerViewModel();
@@ -204,7 +214,7 @@ public class MainWindowViewModel : ViewModelBase
                     if (jsonResult.IsValid && jsonResult.Model != null)
                     {
                         var jsonSchema = InferSchemaFromJson(jsonResult.Model);
-                        var jsonTable = _jsonAgent.BuildTableFromJson(jsonResult.Model, jsonSchema);
+                        var jsonTable = _jsonAgent.BuildTableFromJson(jsonResult.Model, jsonSchema, _settingsAgent.ArrayDisplayMultiLine);
                         return (jsonTable, jsonSchema);
                     }
                 }

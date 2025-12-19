@@ -10,6 +10,7 @@ public class DataSyncAgent
 {
     private readonly JsonAgent _jsonAgent;
     private readonly FormulaAgent _formulaAgent;
+    private bool _arrayDisplayMultiLine = true;
 
     public DataSyncAgent(
         TableModel table,
@@ -30,6 +31,26 @@ public class DataSyncAgent
         Table = table;
         Schema = schema;
         Json = json.Records.Count > 0 ? json : _jsonAgent.BuildJsonFromTable(table, schema);
+    }
+
+    public bool ArrayDisplayMultiLine
+    {
+        get => _arrayDisplayMultiLine;
+        set
+        {
+            if (_arrayDisplayMultiLine != value)
+            {
+                _arrayDisplayMultiLine = value;
+                // Refresh table if JSON exists
+                if (Json.Records.Count > 0)
+                {
+                    var tableFromJson = _jsonAgent.BuildTableFromJson(Json, Schema, _arrayDisplayMultiLine);
+                    EnsureTableMatchesSchema(tableFromJson, Schema);
+                    Table = tableFromJson;
+                    TableChanged?.Invoke();
+                }
+            }
+        }
     }
 
     public TableModel Table { get; private set; }
@@ -75,7 +96,7 @@ public class DataSyncAgent
             throw new InvalidOperationException("JSON payload failed validation against schema.");
         }
 
-        var tableFromJson = _jsonAgent.BuildTableFromJson(updatedJson, Schema);
+        var tableFromJson = _jsonAgent.BuildTableFromJson(updatedJson, Schema, _arrayDisplayMultiLine);
         EnsureTableMatchesSchema(tableFromJson, Schema);
         Json = updatedJson;
         Table = tableFromJson;

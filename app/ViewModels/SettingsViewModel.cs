@@ -197,6 +197,20 @@ public class SettingsViewModel : ViewModelBase
         }
     }
 
+    public bool ArrayDisplayMultiLine
+    {
+        get => _settingsAgent.ArrayDisplayMultiLine;
+        set
+        {
+            if (_settingsAgent.ArrayDisplayMultiLine != value)
+            {
+                _settingsAgent.ArrayDisplayMultiLine = value;
+                RaisePropertyChanged();
+                _settingsAgent.SaveSettings();
+            }
+        }
+    }
+
     public ObservableCollection<string> FontSizes { get; } = new ObservableCollection<string> { "12", "13", "14", "16", "18", "20", "24" };
     public ObservableCollection<string> Delimiters { get; } = new ObservableCollection<string> { "Comma (,)", "Semicolon (;)", "Tab (\\t)", "Pipe (|)" };
 

@@ -72,8 +72,15 @@ public class SettingsAgent : INotifyPropertyChanged
     private bool _renderWhitespace = false;
     public bool RenderWhitespace
     {
-         get => _renderWhitespace;
-         set => SetProperty(ref _renderWhitespace, value);
+        get => _renderWhitespace;
+        set => SetProperty(ref _renderWhitespace, value);
+    }
+
+    private bool _arrayDisplayMultiLine = true;
+    public bool ArrayDisplayMultiLine
+    {
+        get => _arrayDisplayMultiLine;
+        set => SetProperty(ref _arrayDisplayMultiLine, value);
     }
 
     public char DelimiterChar
@@ -126,7 +133,8 @@ public class SettingsAgent : INotifyPropertyChanged
                 CsvDelimiter = CsvDelimiter,
                 TrimWhitespace = TrimWhitespace,
                 RowHeight = RowHeight,
-                RenderWhitespace = RenderWhitespace
+                RenderWhitespace = RenderWhitespace,
+                ArrayDisplayMultiLine = ArrayDisplayMultiLine
             };
 
             var json = JsonSerializer.Serialize(model, new JsonSerializerOptions { WriteIndented = true });
@@ -169,6 +177,7 @@ public class SettingsAgent : INotifyPropertyChanged
                     TrimWhitespace = model.TrimWhitespace;
                     RowHeight = model.RowHeight;
                     RenderWhitespace = model.RenderWhitespace;
+                    ArrayDisplayMultiLine = model.ArrayDisplayMultiLine;
                 }
             }
         }
@@ -189,6 +198,7 @@ public class SettingsAgent : INotifyPropertyChanged
         public bool TrimWhitespace { get; set; }
         public int RowHeight { get; set; }
         public bool RenderWhitespace { get; set; }
+        public bool ArrayDisplayMultiLine { get; set; } = true;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

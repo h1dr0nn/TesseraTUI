@@ -170,6 +170,11 @@ public class JsonAgent
 
     public TableModel BuildTableFromJson(JsonModel json, SchemaModel schema)
     {
+        return BuildTableFromJson(json, schema, arrayDisplayMultiLine: true);
+    }
+
+    public TableModel BuildTableFromJson(JsonModel json, SchemaModel schema, bool arrayDisplayMultiLine)
+    {
         var columns = schema.Columns.Select(c => new ColumnModel(c.Name)).ToList();
         var rows = new List<RowModel>();
 
@@ -187,11 +192,32 @@ public class JsonAgent
                 {
                    if (value is System.Collections.IEnumerable list && value is not string)
                    {
-                       foreach (var item in list) 
+                       if (arrayDisplayMultiLine)
                        {
-                           values.Add(SerializeValue(item));
+                           // Multi-line mode: each array element on separate row
+                           foreach (var item in list) 
+                           {
+                               values.Add(SerializeValue(item));
+                           }
+                           if (values.Count == 0) values.Add(null); // Empty array placeholder
                        }
-                       if (values.Count == 0) values.Add(null); // Empty array placeholder
+                       else
+                       {
+                           // Single-line mode: all array elements in one cell, comma-separated
+                           var arrayItems = new List<string>();
+                           foreach (var item in list)
+                           {
+                               arrayItems.Add(SerializeValue(item) ?? "null");
+                           }
+                           if (arrayItems.Count > 0)
+                           {
+                               values.Add(string.Join(",", arrayItems));
+                           }
+                           else
+                           {
+                               values.Add(null);
+                           }
+                       }
                    }
                    else
                    {
@@ -385,8 +411,82 @@ public class JsonAgent
             return null;
         }
 
-        // First, try to deserialize as JSON (for complex objects)
-        if ((value.TrimStart().StartsWith("{") || value.TrimStart().StartsWith("[")))
+        // First, try to detect if this is a comma-separated list of JSON objects (array in single-line mode)
+        // Pattern: {"x":1,"y":2},{"x":3,"y":4},...
+        if (value.TrimStart().StartsWith("{"))
+        {
+            // Check if it contains multiple JSON objects separated by commas
+            // This happens when ArrayDisplayMultiLine = false
+            var openBraces = value.Count(c => c == '{');
+            if (openBraces > 1 || value.Contains("},{"))
+            {
+                try
+                {
+                    // Split by "},{" pattern and parse each object separately
+                    var parts = value.Split(new[] { "},{" }, StringSplitOptions.None);
+                    var objects = new List<object?>();
+                    
+                    for (int i = 0; i < parts.Length; i++)
+                    {
+                        var part = parts[i];
+                        // Add back the braces that were removed by split
+                        if (i == 0 && i == parts.Length - 1)
+                        {
+                            // Single object, no split occurred - part is already correct
+                            // No modification needed
+                        }
+                        else if (i == 0)
+                        {
+                            // First part: add closing brace
+                            part = part + "}";
+                        }
+                        else if (i == parts.Length - 1)
+                        {
+                            // Last part: add opening brace
+                            part = "{" + part;
+                        }
+                        else
+                        {
+                            // Middle parts: add both braces
+                            part = "{" + part + "}";
+                        }
+                        
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(part);
+                            objects.Add(ConvertElement(doc.RootElement));
+                        }
+                        catch
+                        {
+                            // Skip invalid objects
+                        }
+                    }
+                    
+                    if (objects.Count > 0)
+                    {
+                        return objects;
+                    }
+                }
+                catch
+                {
+                    // Fall through to try single object parsing
+                }
+            }
+            
+            // Try parsing as single JSON object
+            try
+            {
+                using var doc = JsonDocument.Parse(value);
+                return ConvertElement(doc.RootElement);
+            }
+            catch
+            {
+                // Not valid JSON, continue with normal parsing
+            }
+        }
+
+        // Try to deserialize as JSON array
+        if (value.TrimStart().StartsWith("["))
         {
             try
             {

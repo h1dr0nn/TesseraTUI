@@ -148,6 +148,15 @@
                                </StackPanel>
                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding TrimWhitespace}" OnContent="" OffContent="" />
                            </Grid>
+                           
+                           <!-- Array Display Mode -->
+                           <Grid ColumnDefinitions="*,Auto">
+                               <StackPanel Spacing="2">
+                                   <TextBlock Text="Array Display: Multi-line" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                   <TextBlock Text="Display array elements on separate rows (off: single line with commas)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                               </StackPanel>
+                               <ToggleSwitch Grid.Column="1" IsChecked="{Binding ArrayDisplayMultiLine}" OnContent="" OffContent="" />
+                           </Grid>
                        </StackPanel>
                    </Border>
               </StackPanel>
