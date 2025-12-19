@@ -1,6 +1,6 @@
 {
   "name": "com.h1dr0n.tessera",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "displayName": "Tessera Core",
   "description": "Unified Data Core and Native bindings for Tessera CSV Editor within Unity.",
   "unity": "2021.3",
@@ -14,7 +14,7 @@
   ],
   "author": {
     "name": "h1dr0n",
-    "email": "contact@example.com",
+    "email": "hdrn151@gmail.com",
     "url": "https://github.com/h1dr0nn"
   }
 }

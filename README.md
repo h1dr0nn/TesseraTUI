@@ -1,92 +1,59 @@
 # 🎛️ Tessera - CSV Editor  
+
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.0.0-brightgreen)
+
 A clean, modern, and powerful CSV editor designed for creators, developers, and data-heavy workflows.  
 
 ---
 
-## ✨ Why Tessera?
+## ✨ Key Features
 
 ### ✔ Modern & Minimal UI  
 Smooth, distraction-free, and easier to use than traditional spreadsheet tools.
 
 ### ✔ Three Synchronized Views  
-Switch anytime — edit anywhere — everything stays in sync.
-
-- **Table View**: fast grid editing, keyboard-friendly.  
-- **Schema View**: inspect and adjust data types, rules, and column details.  
-- **JSON View**: edit structured JSON with live validation.
+- **Table View**: Fast grid editing, keyboard-friendly.  
+- **Schema View**: Inspect and adjust data types, rules, and column details.  
+- **JSON View**: Edit structured JSON objects with live validation.
 
 ### ✔ Safe Editing  
-Tessera validates all changes before saving:
-- Type mismatches  
-- Invalid JSON  
-- Broken schema rules  
-- Missing required values  
-
+Tessera validates everything: Type mismatches, Invalid JSON, Broken schema rules.  
 No more corrupted CSV files.
 
-### ✔ Built for Large Files  
-Virtualized rendering keeps the UI smooth even with tens of thousands of rows.
-
 ### ✔ Game-Ready  
-Perfect for:
-- Level data  
-- Config tables  
-- Item definitions  
-- Localization sheets  
-- LiveOps content  
-- Any structured CSV workflow
+Perfect for Level data, Config tables, Item definitions, Localization, and LiveOps.
 
 ---
 
-## 🖥️ Views Overview
+## 📥 Installation
 
-### 🟦 Table View  
-Edit cells directly, copy/paste, undo/redo, error highlighting.
+### 🖥️ Desktop App
+Download the latest version for your OS from the [Releases Page](https://github.com/h1dr0n/TesseraTUI/releases).
+* **Windows**: Download `.exe` or `.zip`.
+* **macOS**: Download `.dmg` or `.app`.
+* **Linux**: Download `.AppImage` or `.deb`.
 
-### 🟧 Schema View  
-Auto-detected types, custom rules, min/max values, distinct counts, and full-column validation.
-
-### 🟩 JSON View  
-Pretty-printed JSON with syntax errors highlighted; apply changes safely back into the table.
-
----
-
-## 📁 File Support
-
-- **CSV** (primary format)  
-- **JSON** (import/export)  
-- **Schema file** (auto-saved with your CSV)
-
-Saving always preserves schema + data integrity.
+### 🎮 Unity Package
+Install directly via Unity Package Manager:
+1. Open **Package Manager** (`Window > Package Manager`).
+2. Click the **+** button -> **Add package from git URL...**.
+3. Paste the following URL:
+   ```
+   https://github.com/h1dr0n/TesseraTUI.git?path=/UnityTessera#main
+   ```
 
 ---
 
-## ⚙️ Installation
-
-### Windows  
-Download `.exe` or `.zip` from Releases — no .NET runtime required.
-
-### macOS  
-Download the `.app` or `.dmg`. If Gatekeeper warns you, choose **Open Anyway**.
-
-### Linux  
-Available as `.AppImage` and `.deb`.
-
----
-
-## 💡 Tips
-
-- Use **Schema View** to keep data clean and safe.  
-- Use **JSON View** for batch editing structured records.  
-- Enable “Show Errors Only” when working with very large datasets.
+## 💡 Quick Tips
+- Use **Schema View** to define column types (Int, Float, Boolean, String) for strict validation.
+- Switch to **JSON View** to easily edit complex nested data in a single cell.
+- In Unity, changes made in the editor are automatically saved to your `.csv` file.
 
 ---
 
 ## 💬 Feedback
-
-Found an issue or have a feature idea?  
-Open an issue on the project’s GitHub — always appreciated.
-
----
+Found an issue? Open a ticket on [GitHub Issues](https://github.com/h1dr0n/TesseraTUI/issues).
 
 Built by **h1dr0n**
