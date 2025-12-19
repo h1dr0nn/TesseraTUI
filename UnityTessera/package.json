@@ -1,0 +1,20 @@
+{
+  "name": "com.h1dr0n.tessera",
+  "version": "0.1.0",
+  "displayName": "Tessera Core",
+  "description": "Unified Data Core and Native bindings for Tessera CSV Editor within Unity.",
+  "unity": "2021.3",
+  "documentationUrl": "https://github.com/h1dr0nn/TesseraTUI",
+  "changelogUrl": "https://github.com/h1dr0nn/TesseraTUI/releases",
+  "licensesUrl": "https://github.com/h1dr0nn/TesseraTUI/blob/main/LICENSE",
+  "keywords": [
+    "csv",
+    "data",
+    "table"
+  ],
+  "author": {
+    "name": "h1dr0n",
+    "email": "contact@example.com",
+    "url": "https://github.com/h1dr0nn"
+  }
+}

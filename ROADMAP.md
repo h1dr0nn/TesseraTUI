@@ -163,22 +163,26 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
 
 ### 🔧 **Phase 9 — Unity 6 Integration**
 
-**Status: Pending**
+**Status: In Progress** ✅
 
-- [ ] Convert Unified Data Core thành package dùng được trong Unity.
-- [ ] Build riêng module Rust (`Tessera.Native`) cho Unity:
-  - [ ] Windows `.dll`
+- [x] Convert Unified Data Core thành package dùng được trong Unity (.NET Standard 2.1).
+- [x] Build riêng module Rust (`Tessera.Native`) cho Unity:
+  - [x] Windows `.dll`
   - [ ] macOS `.dylib`
   - [ ] Linux `.so`
-- [ ] Tạo `/UnityTessera/package.json`.
-- [ ] Unity EditorWindow có:
-  - Table View
-  - Schema View
-  - JSON View
+- [x] Tạo `/UnityTessera/package.json`.
+- [x] Unity EditorWindow với Table View cơ bản:
+  - [x] Load CSV file
+  - [x] Display table grid
+  - [x] Inline cell editing
+  - [x] Save changes
+  - [ ] Schema View
+  - [ ] JSON View
 - [ ] Import CSV → ScriptableObject theo schema.
 - [ ] Validate CSV khi build.
 - [ ] Đồng bộ loại dữ liệu & schema từ editor sang runtime.
-- [ ] Cho phép custom validator của Unity hook vào ValidationAgent.
+- [x] Core integration với ValidationAgent, SchemaAgent, CsvAgent.
+
 
 ---
 
