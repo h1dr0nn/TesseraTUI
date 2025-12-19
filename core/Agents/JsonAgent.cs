@@ -85,8 +85,25 @@ public class JsonAgent
 
         foreach (var row in table.Rows)
         {
-            // Determine if New Record: First column has value?
-            var isNewRecord = !string.IsNullOrWhiteSpace(row.Cells[0]);
+            // Determine if New Record: 
+            // - First row is always a new record
+            // - A new record starts when scalar columns (non-first column) have values
+            //   This distinguishes between array continuation rows and new records
+            var hasFirstColumnValue = !string.IsNullOrWhiteSpace(row.Cells[0]);
+            var hasScalarColumnValues = false;
+            
+            // Check if any non-first column has a value (scalar columns)
+            for (var i = 1; i < table.Columns.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(row.Cells[i]))
+                {
+                    hasScalarColumnValues = true;
+                    break;
+                }
+            }
+            
+            // New record if: first row, or scalar columns have values
+            var isNewRecord = currentRecord == null || hasScalarColumnValues;
             
             if (isNewRecord)
             {
@@ -101,8 +118,6 @@ public class JsonAgent
                 currentGroupValues = new Dictionary<string, List<object?>>();
                 foreach (var col in schema.Columns) currentGroupValues[col.Name] = new List<object?>();
             }
-
-            if (currentRecord == null) continue; // Should not happen if first row has ID
 
             // Collect values
             for (var i = 0; i < table.Columns.Count; i++)
@@ -172,12 +187,15 @@ public class JsonAgent
                 {
                    if (value is System.Collections.IEnumerable list && value is not string)
                    {
-                       foreach (var item in list) values.Add(item?.ToString());
+                       foreach (var item in list) 
+                       {
+                           values.Add(SerializeValue(item));
+                       }
                        if (values.Count == 0) values.Add(null); // Empty array placeholder
                    }
                    else
                    {
-                       values.Add(value?.ToString());
+                       values.Add(SerializeValue(value));
                    }
                 }
                 else
@@ -329,11 +347,56 @@ public class JsonAgent
         }
     }
 
+    private string? SerializeValue(object? value)
+    {
+        if (value == null) return null;
+        
+        // Exclude strings - they should be treated as primitives
+        if (value is string) return value.ToString();
+        
+        // If it's a complex type (Dictionary or List), serialize to JSON
+        if (value is Dictionary<string, object?> || value is List<object?> || value is System.Collections.IEnumerable)
+        {
+            try
+            {
+                // Use compact JSON (no indentation) for table display
+                var compactOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = false,
+                    PropertyNamingPolicy = null,
+                };
+                return JsonSerializer.Serialize(value, compactOptions);
+            }
+            catch
+            {
+                // Fallback to ToString if serialization fails
+                return value.ToString();
+            }
+        }
+        
+        // For primitive types, use ToString
+        return value.ToString();
+    }
+
     private static object? ConvertValue(string? value, DataType dataType)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             return null;
+        }
+
+        // First, try to deserialize as JSON (for complex objects)
+        if ((value.TrimStart().StartsWith("{") || value.TrimStart().StartsWith("[")))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(value);
+                return ConvertElement(doc.RootElement);
+            }
+            catch
+            {
+                // Not valid JSON, continue with normal parsing
+            }
         }
 
         switch (dataType)
