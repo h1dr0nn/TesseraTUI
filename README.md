@@ -30,7 +30,7 @@ Perfect for Level data, Config tables, Item definitions, Localization, and LiveO
 ## 📥 Installation
 
 ### 🖥️ Desktop App
-Download the latest version for your OS from the [Releases Page](https://github.com/h1dr0n/TesseraTUI/releases).
+Download the latest version for your OS from the [Releases Page](https://github.com/h1dr0nn/TesseraTUI/releases).
 * **Windows**: Download `.exe` or `.zip`.
 * **macOS**: Download `.dmg` or `.app`.
 * **Linux**: Download `.AppImage` or `.deb`.
@@ -41,7 +41,7 @@ Install directly via Unity Package Manager:
 2. Click the **+** button -> **Add package from git URL...**.
 3. Paste the following URL:
    ```
-   https://github.com/h1dr0n/TesseraTUI.git?path=/UnityTessera#main
+   https://github.com/h1dr0nn/TesseraTUI.git?path=/UnityTessera#main
    ```
 
 ---
@@ -54,6 +54,6 @@ Install directly via Unity Package Manager:
 ---
 
 ## 💬 Feedback
-Found an issue? Open a ticket on [GitHub Issues](https://github.com/h1dr0n/TesseraTUI/issues).
+Found an issue? Open a ticket on [GitHub Issues](https://github.com/h1dr0nn/TesseraTUI/issues).
 
 Built by **h1dr0n**
