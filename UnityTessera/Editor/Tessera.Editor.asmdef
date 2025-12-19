@@ -1,0 +1,20 @@
+{
+    "name": "Tessera.Editor",
+    "rootNamespace": "Tessera.Editor",
+    "references": [
+        "Tessera.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "core.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

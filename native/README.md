@@ -2,61 +2,93 @@
 
 Rust-accelerated formula calculation engine for Tessera CSV Editor.
 
-## Building
+## 🚀 Build cho Unity (Windows)
 
-### Automated Build (CI/CD)
+### Yêu cầu:
+- ✅ [Rust](https://www.rust-lang.org/tools/install) (1.70+)
+- ✅ Visual Studio 2022 với **Desktop development with C++** workload
 
-The Rust native library is automatically built by GitHub Actions for all platforms (Windows, macOS, Linux) on every push. The built libraries are available as artifacts.
+### Cách build:
 
-### Local Development
+**Từ thư mục gốc dự án:**
+```powershell
+cd native
+PowerShell -ExecutionPolicy Bypass -File .\build_unity_native.ps1
+```
 
-#### Prerequisites
-- Install [Rust](https://www.rust-lang.org/tools/install)
-- Rust 1.70+ recommended
+**Hoặc từ Developer PowerShell for VS 2022:**
+```powershell
+cd D:\Game Projects\Repositories\TesseraTUI\native
+.\build_unity_native.ps1
+```
 
-#### Build Commands
+Script sẽ tự động:
+- Tìm Visual Studio installation
+- Setup VS environment
+- Build Rust native module
+- Copy DLL vào `UnityTessera/Runtime/Plugins/x86_64/tessera_native.dll`
 
-**All Platforms:**
+### Nếu gặp lỗi:
+
+**Lỗi "cannot open input file 'kernel32.lib'":**
+- Mở **Developer PowerShell for VS 2022** từ Start Menu
+- Chạy lại script từ đó
+
+**Lỗi "linker link.exe not found":**
+- Cài Visual Studio Installer
+- Thêm workload: **Desktop development with C++**
+- Chọn: MSVC v143 và Windows SDK
+
+---
+
+## 📦 Build cho Avalonia App (Tất cả Platforms)
+
+### Windows:
+```powershell
+cd native
+cargo build --release --target x86_64-pc-windows-msvc
+# Output: target/x86_64-pc-windows-msvc/release/tessera_native.dll
+```
+
+### macOS:
 ```bash
 cd native
 cargo build --release
+# Output: target/release/libtessera_native.dylib
 ```
 
-**Outputs:**
-- Windows: `target/release/tessera_native.dll`
-- macOS: `target/release/libtessera_native.dylib`
-- Linux: `target/release/libtessera_native.so`
+### Linux:
+```bash
+cd native
+cargo build --release
+# Output: target/release/libtessera_native.so
+```
 
-## Integration
+Copy DLL vào thư mục output của ứng dụng (cùng thư mục với `app.dll` hoặc executable).
 
-The C# application will automatically look for the native library:
-- Windows: `tessera_native.dll`
-- macOS: `libtessera_native.dylib`
-- Linux: `libtessera_native.so`
+---
 
-Copy the built library to the application's output directory (alongside `app.dll` or executable).
+## 🔧 FFI API
 
-## FFI API
+- `tessera_sum` - Tính tổng cột
+- `tessera_avg` - Tính trung bình cột
+- `tessera_min` / `tessera_max` - Min/Max cột
+- `tessera_count` - Đếm giá trị
+- `tessera_parse_formula` - Parse công thức (e.g., "=SUM(ColumnA)")
+- `tessera_free_string` - Giải phóng memory từ native functions
 
-### `tessera_sum`
-Calculate SUM for a column of values.
+---
 
-### `tessera_parse_formula`
-Parse formula string (e.g., "=SUM(ColumnA)") into function and arguments.
+## 💡 Fallback
 
-### `tessera_free_string`
-Free memory allocated by native functions.
+Nếu native library không load được, C# code sẽ tự động fallback về pure C# implementation. Ứng dụng vẫn hoạt động bình thường.
 
-## Fallback
+---
 
-If the native library cannot be loaded, the C# code will automatically fall back to a pure C# implementation. This ensures the application works even without the Rust module.
+## ⚡ Performance
 
-## Performance
-
-The Rust implementation is optimized for:
-- Large datasets (10,000+ rows)
+Tối ưu cho:
+- Datasets lớn (10,000+ rows)
 - Vectorized numeric operations
 - Minimal memory allocation
-
-Benchmark results (to be added in Phase 8 testing).
 
