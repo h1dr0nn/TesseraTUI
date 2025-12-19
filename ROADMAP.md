@@ -176,8 +176,8 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
   - [x] Display table grid
   - [x] Inline cell editing
   - [x] Save changes
-  - [ ] Schema View
-  - [ ] JSON View
+  - [x] Schema View
+  - [x] JSON View
 - [ ] Import CSV → ScriptableObject theo schema.
 - [ ] Validate CSV khi build.
 - [ ] Đồng bộ loại dữ liệu & schema từ editor sang runtime.

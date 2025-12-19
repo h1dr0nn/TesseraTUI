@@ -47,8 +47,19 @@ namespace Tessera.Editor
         {
             using (new EditorGUILayout.VerticalScope("box"))
             {
-                // Column name (read-only)
-                EditorGUILayout.TextField("Column Name", column.Name);
+                // Column name (editable)
+                string newName = EditorGUILayout.TextField("Column Name", column.Name);
+                if (newName != column.Name && !string.IsNullOrWhiteSpace(newName))
+                {
+                    // Update schema
+                    column.Name = newName;
+                    
+                    // Also update Table.Columns to keep them in sync
+                    if (_state.Table != null && index < _state.Table.Columns.Count)
+                    {
+                        _state.Table.Columns[index] = new ColumnModel(newName);
+                    }
+                }
                 
                 // Type dropdown
                 var newType = (DataType)EditorGUILayout.EnumPopup("Data Type", column.Type);

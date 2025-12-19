@@ -97,7 +97,6 @@ namespace Tessera.Editor
                 {
                     _state.Table = jsonAgent.BuildTableFromJson(parseResult.Model, _state.Schema);
                     _errorMessage = "";
-                    Debug.Log("[Tessera] JSON changes applied to table");
                 }
                 else
                 {
