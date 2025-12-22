@@ -29,6 +29,17 @@ namespace Tessera.Editor
         private int _selectedColumnIndex = -1;
         private HashSet<(int row, int col)> _selectedCells = new HashSet<(int, int)>();
         
+        // Column width cache (dynamic based on header name)
+        private List<float> _columnWidths = new List<float>();
+        private List<float> _columnMinWidths = new List<float>(); // Minimum widths based on header
+        private int _resizingColumnIndex = -1; // Column being resized
+        private float _resizeStartX;
+        private float _resizeStartWidth;
+        
+        // Copy button state
+        private int _pressedCopyButtonIndex = -1;
+        private int _lastHoveredCopyButton = -1;
+        
         [MenuItem("Tools/Tessera - CSV Editor")]
         public static void ShowWindow()
         {
@@ -190,19 +201,61 @@ namespace Tessera.Editor
                 // Note: Standard IMGUI table performance is poor for large datasets.
                 // Optimizations like reusing GUIStyles or virtualizing are advanced but good to keep in mind.
                 
+                // Calculate column widths (dynamic based on header length)
+                UpdateColumnWidths();
+                
                 // Header
                 using (new EditorGUILayout.HorizontalScope("box"))
                 {
                     for (int j = 0; j < _state.Schema.Columns.Count; j++)
                     {
                         var col = _state.Schema.Columns[j];
+                        float columnWidth = GetColumnWidth(j);
+                        float copyButtonWidth = 18f;
+                        float resizeHandleWidth = 6f;
+                        float labelWidth = columnWidth - copyButtonWidth - resizeHandleWidth - 2f;
+                        
+                        // Get rect for the entire header cell
                         var headerRect = GUILayoutUtility.GetRect(
                             new GUIContent(col.Name), 
                             EditorStyles.boldLabel, 
-                            GUILayout.Width(TesseraSettings.FontSize * 8));
+                            GUILayout.Width(columnWidth));
                         
-                        // Handle header click
-                        if (Event.current.type == EventType.MouseDown && headerRect.Contains(Event.current.mousePosition))
+                        // Split into label rect, copy button rect, and resize handle rect
+                        var labelRect = new Rect(headerRect.x, headerRect.y, labelWidth, headerRect.height);
+                        var copyButtonRect = new Rect(headerRect.x + labelWidth + 2f, headerRect.y + (headerRect.height - 12f) / 2f, 12f, 12f);
+                        var resizeHandleRect = new Rect(headerRect.xMax - resizeHandleWidth, headerRect.y, resizeHandleWidth, headerRect.height);
+                        
+                        // Handle column resize
+                        EditorGUIUtility.AddCursorRect(resizeHandleRect, MouseCursor.ResizeHorizontal);
+                        
+                        if (Event.current.type == EventType.MouseDown && resizeHandleRect.Contains(Event.current.mousePosition))
+                        {
+                            _resizingColumnIndex = j;
+                            _resizeStartX = Event.current.mousePosition.x;
+                            _resizeStartWidth = columnWidth;
+                            Event.current.Use();
+                        }
+                        
+                        if (_resizingColumnIndex == j)
+                        {
+                            if (Event.current.type == EventType.MouseDrag)
+                            {
+                                float delta = Event.current.mousePosition.x - _resizeStartX;
+                                float newWidth = Mathf.Max(_resizeStartWidth + delta, GetColumnMinWidth(j));
+                                _columnWidths[j] = newWidth;
+                                Repaint();
+                                Event.current.Use();
+                            }
+                            else if (Event.current.type == EventType.MouseUp)
+                            {
+                                _resizingColumnIndex = -1;
+                                Event.current.Use();
+                            }
+                        }
+                        
+                        // Handle header click (on label area only)
+                        if (Event.current.type == EventType.MouseDown && labelRect.Contains(Event.current.mousePosition))
                         {
                             if (Event.current.button == 0) // Left click
                             {
@@ -228,7 +281,15 @@ namespace Tessera.Editor
                             EditorGUI.DrawRect(headerRect, new Color(0.3f, 0.5f, 0.8f, 0.3f));
                         }
                         
-                        GUI.Label(headerRect, col.Name, EditorStyles.boldLabel);
+                        GUI.Label(labelRect, col.Name, EditorStyles.boldLabel);
+                        
+                        // Copy column button - simple flat icon with hover effect
+                        int currentColIndex = j;
+                        DrawCopyButton(copyButtonRect, currentColIndex);
+                        
+                        // Draw resize handle visual
+                        var handleColor = new Color(0.5f, 0.5f, 0.5f, 0.3f);
+                        EditorGUI.DrawRect(new Rect(resizeHandleRect.x + 2, resizeHandleRect.y + 4, 1, resizeHandleRect.height - 8), handleColor);
                     }
                 }
 
@@ -242,11 +303,11 @@ namespace Tessera.Editor
                         {
                             var val = row.Cells[j] ?? "";
                             
-                            // Get rect for this cell
+                            // Get rect for this cell (use same width as header)
                             var cellRect = GUILayoutUtility.GetRect(
                                 new GUIContent(val), 
                                 EditorStyles.textField, 
-                                GUILayout.Width(TesseraSettings.FontSize * 8));
+                                GUILayout.Width(GetColumnWidth(j)));
                             
                             // Handle cell click - only for selection, don't interfere with TextField editing
                             if (Event.current.type == EventType.MouseDown && cellRect.Contains(Event.current.mousePosition))
@@ -325,6 +386,120 @@ namespace Tessera.Editor
             if (showContextMenu)
             {
                 ShowContextMenu();
+            }
+        }
+        
+        private void UpdateColumnWidths()
+        {
+            if (_state.Schema == null) return;
+            
+            // Resize lists if needed
+            while (_columnWidths.Count < _state.Schema.Columns.Count)
+                _columnWidths.Add(0);
+            while (_columnWidths.Count > _state.Schema.Columns.Count)
+                _columnWidths.RemoveAt(_columnWidths.Count - 1);
+                
+            while (_columnMinWidths.Count < _state.Schema.Columns.Count)
+                _columnMinWidths.Add(0);
+            while (_columnMinWidths.Count > _state.Schema.Columns.Count)
+                _columnMinWidths.RemoveAt(_columnMinWidths.Count - 1);
+            
+            // Calculate min width for each column based on header name
+            for (int j = 0; j < _state.Schema.Columns.Count; j++)
+            {
+                var headerName = _state.Schema.Columns[j].Name ?? "";
+                float textWidth = EditorStyles.boldLabel.CalcSize(new GUIContent(headerName)).x;
+                float buttonSpace = 36f; // Space for copy button + resize handle
+                
+                _columnMinWidths[j] = textWidth + buttonSpace + 8f;
+                
+                // Initialize width to min if not set or less than min
+                if (_columnWidths[j] < _columnMinWidths[j])
+                {
+                    _columnWidths[j] = _columnMinWidths[j];
+                }
+            }
+        }
+        
+        private float GetColumnWidth(int columnIndex)
+        {
+            if (columnIndex >= 0 && columnIndex < _columnWidths.Count)
+                return _columnWidths[columnIndex];
+            return TesseraSettings.FontSize * 8; // Default fallback
+        }
+        
+        private float GetColumnMinWidth(int columnIndex)
+        {
+            if (columnIndex >= 0 && columnIndex < _columnMinWidths.Count)
+                return _columnMinWidths[columnIndex];
+            return TesseraSettings.FontSize * 6; // Default fallback
+        }
+        
+        private void DrawCopyButton(Rect rect, int columnIndex)
+        {
+            // Hover and press detection
+            bool isHovered = rect.Contains(Event.current.mousePosition);
+            bool isPressed = _pressedCopyButtonIndex == columnIndex;
+            
+            // Track hover changes for immediate repaint
+            if (isHovered && _lastHoveredCopyButton != columnIndex)
+            {
+                _lastHoveredCopyButton = columnIndex;
+                Repaint();
+            }
+            else if (!isHovered && _lastHoveredCopyButton == columnIndex)
+            {
+                _lastHoveredCopyButton = -1;
+                Repaint();
+            }
+            
+            // Draw background on hover/press
+            if (isPressed)
+            {
+                EditorGUI.DrawRect(rect, new Color(0.3f, 0.3f, 0.3f, 0.5f));
+            }
+            else if (isHovered)
+            {
+                EditorGUI.DrawRect(rect, new Color(0.5f, 0.5f, 0.5f, 0.3f));
+            }
+            
+            // Draw simple copy icon (single square with border)
+            var iconColor = isPressed ? new Color(0.7f, 0.7f, 0.7f) : 
+                           (isHovered ? new Color(0.95f, 0.95f, 0.95f) : new Color(0.6f, 0.6f, 0.6f));
+            var bgColor = EditorGUIUtility.isProSkin ? new Color(0.22f, 0.22f, 0.22f) : new Color(0.76f, 0.76f, 0.76f);
+            
+            float padding = 2f;
+            float pressOffset = isPressed ? 1f : 0f; // Visual "press down" offset
+            var squareRect = new Rect(
+                rect.x + padding + pressOffset, 
+                rect.y + padding + pressOffset, 
+                rect.width - padding * 2, 
+                rect.height - padding * 2);
+            
+            // Outer border
+            EditorGUI.DrawRect(squareRect, iconColor);
+            // Inner fill
+            var innerRect = new Rect(squareRect.x + 1, squareRect.y + 1, squareRect.width - 2, squareRect.height - 2);
+            EditorGUI.DrawRect(innerRect, bgColor);
+            
+            // Handle mouse down (start press)
+            if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
+            {
+                _pressedCopyButtonIndex = columnIndex;
+                Event.current.Use();
+                Repaint();
+            }
+            
+            // Handle mouse up (execute copy if still over button)
+            if (_pressedCopyButtonIndex == columnIndex && Event.current.type == EventType.MouseUp)
+            {
+                if (rect.Contains(Event.current.mousePosition))
+                {
+                    CopyColumn(columnIndex);
+                }
+                _pressedCopyButtonIndex = -1;
+                Event.current.Use();
+                Repaint();
             }
         }
 
@@ -571,6 +746,25 @@ namespace Tessera.Editor
             
             string content = SerializeCsvForClipboard(rows);
             EditorGUIUtility.systemCopyBuffer = content;
+        }
+        
+        private void CopyColumn(int columnIndex)
+        {
+            if (_state.Table == null) return;
+            if (columnIndex < 0 || columnIndex >= _state.Schema.Columns.Count) return;
+            
+            var columnValues = new StringBuilder();
+            for (int i = 0; i < _state.Table.Rows.Count; i++)
+            {
+                var row = _state.Table.Rows[i];
+                if (columnIndex < row.Cells.Count)
+                {
+                    if (i > 0) columnValues.AppendLine();
+                    columnValues.Append(row.Cells[columnIndex] ?? "");
+                }
+            }
+            
+            EditorGUIUtility.systemCopyBuffer = columnValues.ToString();
         }
         
         private void PasteSelection()
