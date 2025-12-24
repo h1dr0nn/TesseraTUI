@@ -167,7 +167,7 @@
                     <Border Background="{DynamicResource StrongSurfaceBrush}" Padding="16" CornerRadius="4">
                         <StackPanel Spacing="4">
                             <TextBlock Text="Tessera - CSV Editor" FontWeight="Bold" />
-                            <TextBlock Text="Version 1.0.0 (Beta)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="Version 1.0.1" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock Text="© 2025 h1dr0n" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>
                     </Border>

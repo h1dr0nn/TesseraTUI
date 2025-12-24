@@ -1,6 +1,6 @@
 {
   "name": "com.h1dr0n.tessera",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "Tessera Core",
   "description": "Unified Data Core and Native bindings for Tessera CSV Editor within Unity.",
   "unity": "2021.3",
