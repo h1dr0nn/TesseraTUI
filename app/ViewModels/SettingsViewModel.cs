@@ -24,6 +24,7 @@ public class SettingsViewModel : ViewModelBase
         {
             "Appearance",
             "Editor",
+            "File Explorer",
             "Data Processing",
             "About"
         };
@@ -205,6 +206,20 @@ public class SettingsViewModel : ViewModelBase
             if (_settingsAgent.ArrayDisplayMultiLine != value)
             {
                 _settingsAgent.ArrayDisplayMultiLine = value;
+                RaisePropertyChanged();
+                _settingsAgent.SaveSettings();
+            }
+        }
+    }
+
+    public bool ShowCsvJsonOnly
+    {
+        get => _settingsAgent.ShowCsvJsonOnly;
+        set
+        {
+            if (_settingsAgent.ShowCsvJsonOnly != value)
+            {
+                _settingsAgent.ShowCsvJsonOnly = value;
                 RaisePropertyChanged();
                 _settingsAgent.SaveSettings();
             }

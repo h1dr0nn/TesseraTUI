@@ -17,7 +17,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var viewModel = new MainWindowViewModel();
+            var viewModel = new MainWindowViewModel(desktop.Args);
             desktop.MainWindow = new MainWindow
             {
                 DataContext = viewModel,

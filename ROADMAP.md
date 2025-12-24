@@ -187,8 +187,18 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
 **Bug Fixes & Improvements:**
 - [x] Fix: File JSON khi edit và save bị lưu thành CSV thay vì giữ nguyên format JSON.
 - [x] Fix: App đọc được file không hợp lệ (không phải CSV/JSON) → cần filter file type.
-- [x] Fix: Edit state không tắt khi click ra ngoài UI. (Unity)
+- [ ] Fix: Edit state không tắt khi click ra ngoài UI. (Unity)
 - [x] Fix: Border bo góc bị mất ở Table và Schema views. (Avalonia)
+- [x] Improvement: Natural file sort (1, 2, 10 instead of 1, 10, 2).
+- [x] Improvement: Add "New File/Folder" to header menu.
+- [x] Improvement: Add "Rename" and "Open in Explorer" to context menu.
+- [x] Fix: App Start file association handling.
+- [x] Improvement: File type filtering setting (CSV/JSON only).
+- [x] Improvement: File search bar in Explorer.
+- [x] Fix: Settings sidebar không hiện section mới. (User feedback)
+- [x] Improvement: Inline rename thay vì popup. (User feedback)
+- [x] Fix: Edit mode (DataGrid) không tắt khi click ra ngoài. (Avalonia - User feedback)
+- [x] Performance: Search bar bị lag → cần debounce. (User feedback)
 
 **Remaining Unity Integration:**
 - [ ] Build module Rust cho các platform khác:

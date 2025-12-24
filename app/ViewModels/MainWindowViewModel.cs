@@ -39,7 +39,7 @@ public class MainWindowViewModel : ViewModelBase
     public JsonViewModel JsonViewModel { get; }
     public GraphViewModel GraphViewModel { get; }
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(string[]? args = null)
     {
         _settingsAgent.ThemeChanged += ApplyTheme;
 
@@ -58,7 +58,7 @@ public class MainWindowViewModel : ViewModelBase
         };
         
         // Initialize Child ViewModels
-        FileExplorer = new FileExplorerViewModel();
+        FileExplorer = new FileExplorerViewModel(_settingsAgent); // CHANGED
         FileExplorer.FileSelected += OnFileSelected;
         
         // Tab Layout
@@ -82,6 +82,23 @@ public class MainWindowViewModel : ViewModelBase
         {
             if (param is WorkspaceViewModel view) ToggleView(view);
         });
+
+        // Handle Startup File
+        if (args != null && args.Length > 0)
+        {
+            var initialFile = args[0];
+            if (File.Exists(initialFile))
+            {
+                // Defer slightly to ensure UI binding is ready? 
+                // Actually calling OnFileSelected is fine, it updates properties.
+                // We might want to set RootPath of Explorer too?
+                // For now, simple file open:
+                OnFileSelected(initialFile);
+                
+                // Optionally open the folder in explorer too?
+                // FileExplorer.LoadDirectory(Path.GetDirectoryName(initialFile));
+            }
+        }
     }
 
     public ObservableCollection<WorkspaceViewModel> Views => _navigationAgent.Views;

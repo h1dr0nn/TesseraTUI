@@ -18,7 +18,7 @@
         <Thickness x:Key="TextOffsetMargin">0,0,0,0</Thickness>
     </UserControl.Resources>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
         <!-- Workspace Header -->
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrushLight}" BorderThickness="0,0,0,1" Padding="12,10">
             <Grid ColumnDefinitions="*,Auto">
@@ -44,6 +44,26 @@
                                     <i:Icon Value="mdi-folder-open" FontSize="16"  />
                                 </MenuItem.Icon>
                             </MenuItem>
+                            <Separator/>
+                            <MenuItem Command="{Binding FileExplorer.NewFileCommand}"
+                                      IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="New File" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-file-plus-outline" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Command="{Binding FileExplorer.NewFolderCommand}"
+                                      IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="New Folder" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-folder-plus-outline" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator/>
                             <MenuItem Command="{Binding FileExplorer.CloseWorkspaceCommand}"
                                       IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
                                 <MenuItem.Header>
@@ -69,8 +89,15 @@
             </Grid>
         </Border>
 
+        <!-- Search Bar -->
+        <TextBox Grid.Row="1" Margin="12,12,12,4" 
+                 Watermark="Search files..."
+                 Text="{Binding FileExplorer.SearchText}"
+                 IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}"
+                 IsVisible="{Binding FileExplorer.IsWorkspaceOpen}"/>
+
         <!-- Content Switcher: Tree or Empty State -->
-        <ScrollViewer Grid.Row="1" Margin="12,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="2" Margin="12,8,12,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <Panel>
                 <!-- Empty State: Show when Workspace is NOT open -->
                 <StackPanel IsVisible="{Binding !FileExplorer.IsWorkspaceOpen}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
@@ -113,14 +140,49 @@
                                     <i:Icon Value="mdi-refresh" FontSize="16" />
                                 </MenuItem.Icon>
                             </MenuItem>
+                            <Separator/>
+                            <MenuItem Command="{Binding FileExplorer.RenameCommand}" IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="Rename" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-rename-box" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                             <MenuItem Command="{Binding FileExplorer.OpenInExplorerCommand}" IsEnabled="{Binding FileExplorer.IsWorkspaceOpen}">
+                                <MenuItem.Header>
+                                    <TextBlock Text="Open in Explorer" Margin="{StaticResource TextOffsetMargin}" />
+                                </MenuItem.Header>
+                                <MenuItem.Icon>
+                                    <i:Icon Value="mdi-folder-search-outline" FontSize="16" />
+                                </MenuItem.Icon>
+                            </MenuItem>
                         </ContextMenu>
                     </TreeView.ContextMenu>
                     <TreeView.ItemTemplate>
                         <TreeDataTemplate ItemsSource="{Binding Children}">
-                            <Grid ColumnDefinitions="Auto,*" Margin="0,4,0,4" VerticalAlignment="Center">
+                            <Grid ColumnDefinitions="Auto,*" Height="24" VerticalAlignment="Center">
                                 <i:Icon Grid.Column="0" Value="mdi-folder" FontSize="16" IsVisible="{Binding IsDirectory}" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                                 <i:Icon Grid.Column="0" Value="mdi-file-outline" FontSize="16" IsVisible="{Binding IsDirectory, Converter={StaticResource InverseBoolConverter}}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="{StaticResource TextOffsetMargin}" />
+                                <!-- Normal display mode -->
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" IsVisible="{Binding !IsEditing}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" Margin="{StaticResource TextOffsetMargin}" />
+                                <!-- Inline edit mode - compact TextBox -->
+                                <TextBox Grid.Column="1" 
+                                         Text="{Binding EditName, Mode=TwoWay}" 
+                                         IsVisible="{Binding IsEditing}" 
+                                         FontSize="12" 
+                                         VerticalAlignment="Center"
+                                         VerticalContentAlignment="Center"
+                                         HorizontalAlignment="Left"
+                                         Height="20"
+                                         Width="140"
+                                         Padding="2,0"
+                                         Margin="0"
+                                         BorderThickness="1"
+                                         BorderBrush="{DynamicResource AccentBrush}"
+                                         KeyDown="OnRenameTextBoxKeyDown"
+                                         LostFocus="OnRenameTextBoxLostFocus"
+                                         AttachedToVisualTree="OnRenameTextBoxAttached" />
                             </Grid>
                         </TreeDataTemplate>
                     </TreeView.ItemTemplate>
@@ -129,7 +191,7 @@
         </ScrollViewer>
         
         <!-- Bottom Settings Action -->
-        <Button Grid.Row="2" Command="{Binding ToggleSettingsCommand}" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12" Margin="12,0,12,12">
+        <Button Grid.Row="3" Command="{Binding ToggleSettingsCommand}" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12" Margin="12,0,12,12">
             <Grid ColumnDefinitions="Auto,*">
                 <i:Icon Value="mdi-cog" FontSize="16" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0" />
                 <TextBlock Grid.Column="1" Text="Settings" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" FontSize="13" Margin="{StaticResource TextOffsetMargin}" />

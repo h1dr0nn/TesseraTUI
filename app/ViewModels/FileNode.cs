@@ -33,6 +33,20 @@ public class FileNode : ViewModelBase
         set => SetProperty(ref _isExpanded, value);
     }
 
+    private bool _isEditing;
+    public bool IsEditing
+    {
+        get => _isEditing;
+        set => SetProperty(ref _isEditing, value);
+    }
+
+    private string _editName = string.Empty;
+    public string EditName
+    {
+        get => _editName;
+        set => SetProperty(ref _editName, value);
+    }
+
     public ObservableCollection<FileNode> Children { get; } = new();
 
     public FileNode(string name, string path, bool isDirectory)

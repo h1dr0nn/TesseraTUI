@@ -19,6 +19,7 @@
     <PackageReference Include="Projektanker.Icons.Avalonia.MaterialDesign" Version="9.6.2" />
     <AvaloniaResource Include="Assets\icon.png" />
     <AvaloniaResource Include="Assets\icon.ico" />
+    <PackageReference Include="System.Reactive" Version="6.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,25 +29,21 @@
   <!-- Copy native library if it exists -->
   <ItemGroup>
     <!-- Windows DLL -->
-    <None Condition="Exists('$(SolutionDir)native\target\$(Configuration)\tessera_native.dll')" 
-          Include="$(SolutionDir)native\target\$(Configuration)\tessera_native.dll">
+    <None Condition="Exists('$(SolutionDir)native\target\$(Configuration)\tessera_native.dll')" Include="$(SolutionDir)native\target\$(Configuration)\tessera_native.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>tessera_native.dll</Link>
     </None>
-    <None Condition="Exists('$(SolutionDir)native\target\release\tessera_native.dll')" 
-          Include="$(SolutionDir)native\target\release\tessera_native.dll">
+    <None Condition="Exists('$(SolutionDir)native\target\release\tessera_native.dll')" Include="$(SolutionDir)native\target\release\tessera_native.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>tessera_native.dll</Link>
     </None>
     <!-- macOS dylib -->
-    <None Condition="Exists('$(SolutionDir)native\target\release\libtessera_native.dylib')" 
-          Include="$(SolutionDir)native\target\release\libtessera_native.dylib">
+    <None Condition="Exists('$(SolutionDir)native\target\release\libtessera_native.dylib')" Include="$(SolutionDir)native\target\release\libtessera_native.dylib">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>libtessera_native.dylib</Link>
     </None>
     <!-- Linux so -->
-    <None Condition="Exists('$(SolutionDir)native\target\release\libtessera_native.so')" 
-          Include="$(SolutionDir)native\target\release\libtessera_native.so">
+    <None Condition="Exists('$(SolutionDir)native\target\release\libtessera_native.so')" Include="$(SolutionDir)native\target\release\libtessera_native.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>libtessera_native.so</Link>
     </None>

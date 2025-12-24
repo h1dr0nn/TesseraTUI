@@ -50,6 +50,40 @@ public partial class SpreadsheetGrid : UserControl
         
         // Initialize column widths when data changes
         DataContextChanged += OnDataContextChanged;
+        
+        // Handle pointer pressed on grid to commit cell edits
+        AddHandler(PointerPressedEvent, OnGridPointerPressed, RoutingStrategies.Tunnel);
+    }
+    
+    /// <summary>
+    /// Handles pointer pressed on the grid. Commits any active cell edit when clicking outside the edit TextBox.
+    /// Uses Tunnel routing to catch the event before it reaches individual cells.
+    /// </summary>
+    private void OnGridPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        // Check if there's an active edit TextBox
+        var focusedElement = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+        if (focusedElement is TextBox editingTextBox)
+        {
+            // Check if the click is on a different element (not the TextBox itself)
+            var hitElement = e.Source as Visual;
+            if (hitElement != null && !IsDescendantOf(hitElement, editingTextBox))
+            {
+                // Commit by removing focus from TextBox (triggers LostFocus)
+                Focus();
+            }
+        }
+    }
+    
+    private static bool IsDescendantOf(Visual element, Visual potentialAncestor)
+    {
+        Visual? current = element;
+        while (current != null)
+        {
+            if (current == potentialAncestor) return true;
+            current = current.GetVisualParent();
+        }
+        return false;
     }
     
     private void OnDataContextChanged(object? sender, EventArgs e)

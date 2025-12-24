@@ -83,6 +83,13 @@ public class SettingsAgent : INotifyPropertyChanged
         set => SetProperty(ref _arrayDisplayMultiLine, value);
     }
 
+    private bool _showCsvJsonOnly = true;
+    public bool ShowCsvJsonOnly
+    {
+        get => _showCsvJsonOnly;
+        set => SetProperty(ref _showCsvJsonOnly, value);
+    }
+
     public char DelimiterChar
     {
         get
@@ -134,7 +141,8 @@ public class SettingsAgent : INotifyPropertyChanged
                 TrimWhitespace = TrimWhitespace,
                 RowHeight = RowHeight,
                 RenderWhitespace = RenderWhitespace,
-                ArrayDisplayMultiLine = ArrayDisplayMultiLine
+                ArrayDisplayMultiLine = ArrayDisplayMultiLine,
+                ShowCsvJsonOnly = ShowCsvJsonOnly
             };
 
             var json = JsonSerializer.Serialize(model, new JsonSerializerOptions { WriteIndented = true });
@@ -178,6 +186,7 @@ public class SettingsAgent : INotifyPropertyChanged
                     RowHeight = model.RowHeight;
                     RenderWhitespace = model.RenderWhitespace;
                     ArrayDisplayMultiLine = model.ArrayDisplayMultiLine;
+                    ShowCsvJsonOnly = model.ShowCsvJsonOnly;
                 }
             }
         }
@@ -199,6 +208,7 @@ public class SettingsAgent : INotifyPropertyChanged
         public int RowHeight { get; set; }
         public bool RenderWhitespace { get; set; }
         public bool ArrayDisplayMultiLine { get; set; } = true;
+        public bool ShowCsvJsonOnly { get; set; } = true;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

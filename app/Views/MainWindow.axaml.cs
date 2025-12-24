@@ -1,5 +1,8 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using System.Threading.Tasks;
 using System.Linq;
 using Tessera.ViewModels;
@@ -12,6 +15,42 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        
+        // Handle pointer pressed anywhere in window to commit/cancel rename edits
+        AddHandler(PointerPressedEvent, OnWindowPointerPressed, RoutingStrategies.Tunnel);
+    }
+    
+    /// <summary>
+    /// Handles pointer pressed anywhere in the window. 
+    /// If clicking outside any focused TextBox, remove focus (triggers LostFocus = commit/cancel).
+    /// Special handling for file rename TextBox.
+    /// </summary>
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        // Check if there's a focused TextBox
+        var focusedElement = FocusManager?.GetFocusedElement();
+        if (focusedElement is not TextBox focusedTextBox) return;
+        
+        // Check if the click target is inside the focused TextBox (could be a child element)
+        var hitElement = e.Source as Avalonia.Visual;
+        while (hitElement != null)
+        {
+            if (hitElement == focusedTextBox)
+            {
+                // Click is on or inside the focused TextBox, don't blur
+                return;
+            }
+            hitElement = hitElement.GetVisualParent();
+        }
+        
+        // Special handling for file rename TextBox
+        if (focusedTextBox.DataContext is FileNode fileNode && fileNode.IsEditing)
+        {
+            fileNode.IsEditing = false;
+        }
+        
+        // Click is outside the TextBox, remove focus (triggers LostFocus event)
+        this.Focus();
     }
 
     private void OnDataContextChanged(object? sender, System.EventArgs e)
