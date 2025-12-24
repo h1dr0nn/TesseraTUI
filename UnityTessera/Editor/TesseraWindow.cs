@@ -82,6 +82,13 @@ namespace Tessera.Editor
 
         private void OnGUI()
         {
+            // Handle click outside text fields to unfocus (Bug fix: edit state not exiting)
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            {
+                // Clear focus when clicking - actual controls will re-capture focus as needed
+                GUI.FocusControl(null);
+            }
+            
             DrawHeader();
             DrawToolbar();
             DrawContent();
@@ -136,7 +143,7 @@ namespace Tessera.Editor
                 GUILayout.FlexibleSpace();
                 
                 // Actions
-                if (GUILayout.Button("Load CSV", EditorStyles.toolbarButton)) LoadCsvFile();
+                if (GUILayout.Button("Load", EditorStyles.toolbarButton)) LoadCsvFile();
                 
                 // View specific actions
                 if (_currentView == ViewMode.Table)
@@ -595,7 +602,8 @@ namespace Tessera.Editor
 
         private void LoadCsvFile()
         {
-            string path = EditorUtility.OpenFilePanel("Open CSV File", "", "csv");
+            // Support both CSV and JSON files
+            string path = EditorUtility.OpenFilePanel("Open Data File", "", "csv,json");
             if (!string.IsNullOrEmpty(path))
             {
                 _state.LoadCsv(path);

@@ -84,8 +84,7 @@
 
                 <!-- Normal Views (Table/Schema/JSON) - shown when ActiveView is set -->
                 <ContentControl Content="{Binding Navigation.ActiveView}" 
-                                IsVisible="{Binding Navigation.ActiveView, Converter={x:Static ObjectConverters.IsNotNull}}" 
-                                Background="{DynamicResource SurfaceBrush}">
+                                IsVisible="{Binding Navigation.ActiveView, Converter={x:Static ObjectConverters.IsNotNull}}">
                   <ContentControl.DataTemplates>
                      <DataTemplate DataType="vm:TableViewModel">
                         <editors:TableView />

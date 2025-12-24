@@ -426,19 +426,30 @@ public class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                // Save from Table Model
-                var headers = _dataSyncAgent.Table.Columns.Select(c => c.Name).ToList();
-                var rows = _dataSyncAgent.Table.Rows.Select(r => r.Cells).ToList();
+                // Check if file is JSON
+                var isJsonFile = _currentFilePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
                 
-                // Combine headers and rows
-                var allData = new List<IEnumerable<string?>> { headers };
-                allData.AddRange(rows);
+                if (isJsonFile)
+                {
+                    // Save as JSON - build JSON from table
+                    var jsonModel = BuildSimpleJsonFromTable(_dataSyncAgent.Table, _dataSyncAgent.Schema);
+                    var jsonContent = _jsonAgent.Serialize(jsonModel);
+                    File.WriteAllText(_currentFilePath, jsonContent);
+                    FileTextContent = jsonContent;
+                }
+                else
+                {
+                    // Save as CSV
+                    var headers = _dataSyncAgent.Table.Columns.Select(c => c.Name).ToList();
+                    var rows = _dataSyncAgent.Table.Rows.Select(r => r.Cells).ToList();
+                    
+                    var allData = new List<IEnumerable<string?>> { headers };
+                    allData.AddRange(rows);
 
-                var csvContent = ClipboardCsvHelper.Serialize(allData, _settingsAgent.DelimiterChar);
-                File.WriteAllText(_currentFilePath, csvContent);
-                
-                // Ensure Plain Text view is updated
-                FileTextContent = csvContent;
+                    var csvContent = ClipboardCsvHelper.Serialize(allData, _settingsAgent.DelimiterChar);
+                    File.WriteAllText(_currentFilePath, csvContent);
+                    FileTextContent = csvContent;
+                }
             }
 
             Status = WorkspaceStatus.Idle;
@@ -535,5 +546,123 @@ public class MainWindowViewModel : ViewModelBase
         if (canBeDate) return DataType.Date;
 
         return DataType.String;
+    }
+
+    /// <summary>
+    /// Build JSON model from table with simple 1:1 row-to-record mapping.
+    /// </summary>
+    private JsonModel BuildSimpleJsonFromTable(TableModel table, SchemaModel schema)
+    {
+        var records = new List<Dictionary<string, object?>>();
+        
+        foreach (var row in table.Rows)
+        {
+            var record = new Dictionary<string, object?>();
+            
+            for (int i = 0; i < table.Columns.Count && i < row.Cells.Count; i++)
+            {
+                var colName = table.Columns[i].Name;
+                var rawValue = row.Cells[i];
+                var dataType = i < schema.Columns.Count ? schema.Columns[i].Type : DataType.String;
+                
+                record[colName] = ConvertCellToJsonValue(rawValue, dataType);
+            }
+            
+            records.Add(record);
+        }
+        
+        return new JsonModel(records);
+    }
+    
+    private object? ConvertCellToJsonValue(string? value, DataType dataType)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+        
+        // First, check if value is a JSON array or object string (common for complex nested data)
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith("[") || trimmed.StartsWith("{"))
+        {
+            try
+            {
+                // Try to parse as JSON
+                using var doc = System.Text.Json.JsonDocument.Parse(trimmed);
+                return ConvertJsonElement(doc.RootElement);
+            }
+            catch
+            {
+                // Not valid JSON, fall through to normal handling
+            }
+        }
+        
+        // Check for comma-separated JSON objects pattern: {x:1},{x:2},...
+        if (trimmed.Contains("},{") || (trimmed.StartsWith("{") && trimmed.EndsWith("}")))
+        {
+            try
+            {
+                // Wrap in array brackets if needed
+                var arrayStr = trimmed.StartsWith("[") ? trimmed : "[" + trimmed + "]";
+                using var doc = System.Text.Json.JsonDocument.Parse(arrayStr);
+                return ConvertJsonElement(doc.RootElement);
+            }
+            catch
+            {
+                // Not valid JSON, fall through
+            }
+        }
+        
+        switch (dataType)
+        {
+            case DataType.Int:
+                if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longVal))
+                    return longVal;
+                break;
+            case DataType.Float:
+                if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleVal))
+                    return doubleVal;
+                if (value.Contains(',') && double.TryParse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleVal2))
+                    return doubleVal2;
+                break;
+            case DataType.Bool:
+                if (bool.TryParse(value, out var boolVal))
+                    return boolVal;
+                break;
+        }
+        
+        return value;
+    }
+    
+    private object? ConvertJsonElement(System.Text.Json.JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case System.Text.Json.JsonValueKind.Object:
+                var dict = new Dictionary<string, object?>();
+                foreach (var prop in element.EnumerateObject())
+                {
+                    dict[prop.Name] = ConvertJsonElement(prop.Value);
+                }
+                return dict;
+            case System.Text.Json.JsonValueKind.Array:
+                var list = new List<object?>();
+                foreach (var item in element.EnumerateArray())
+                {
+                    list.Add(ConvertJsonElement(item));
+                }
+                return list;
+            case System.Text.Json.JsonValueKind.String:
+                return element.GetString();
+            case System.Text.Json.JsonValueKind.Number:
+                if (element.TryGetInt64(out var l)) return l;
+                return element.GetDouble();
+            case System.Text.Json.JsonValueKind.True:
+                return true;
+            case System.Text.Json.JsonValueKind.False:
+                return false;
+            case System.Text.Json.JsonValueKind.Null:
+                return null;
+            default:
+                return element.GetRawText();
+        }
     }
 }

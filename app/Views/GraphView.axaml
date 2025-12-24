@@ -12,7 +12,7 @@
     <utils:EdgePathConverter x:Key="EdgeConverter" />
   </UserControl.Resources>
 
-  <Grid Background="{DynamicResource PageBackgroundBrush}">
+  <Grid>
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
       <Panel Width="{Binding CanvasWidth}" Height="{Binding CanvasHeight}" MinWidth="800" MinHeight="600">
         

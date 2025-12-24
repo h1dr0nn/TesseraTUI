@@ -18,6 +18,9 @@ namespace Tessera.Editor
         public TableModel Table { get; set; }
         public SchemaModel Schema { get; set; }
         
+        // Track if source file was JSON (for correct save format)
+        public bool IsJsonSource { get; private set; }
+        
         // Core components
         private CsvLoader _csvLoader;
         private JsonAgent _jsonAgent;
@@ -63,6 +66,7 @@ namespace Tessera.Editor
                         
                         Table = jsonTable;
                         Schema = jsonSchema;
+                        IsJsonSource = true; // Track that this file was loaded as JSON
                         Debug.Log($"[Tessera] Loaded JSON: {Path.GetFileName(filePath)} - {Table.Rows.Count} rows, {Table.Columns.Count} columns");
                     }
                     else
@@ -77,6 +81,7 @@ namespace Tessera.Editor
                     
                     Table = table;
                     Schema = schema;
+                    IsJsonSource = false; // Track that this file was loaded as CSV
                     Debug.Log($"[Tessera] Loaded CSV: {Path.GetFileName(filePath)} - {Table.Rows.Count} rows, {Table.Columns.Count} columns");
                 }
             }
@@ -100,8 +105,8 @@ namespace Tessera.Editor
                 
                 if (isJsonFile)
                 {
-                    // Save as JSON
-                    var jsonModel = _jsonAgent.BuildJsonFromTable(Table, Schema);
+                    // Save as JSON - use simple row-to-record conversion
+                    var jsonModel = BuildSimpleJsonFromTable(Table, Schema);
                     var jsonContent = _jsonAgent.Serialize(jsonModel);
                     File.WriteAllText(CurrentFilePath, jsonContent, Encoding.UTF8);
                     Debug.Log($"[Tessera] Saved JSON: {Path.GetFileName(CurrentFilePath)}");
@@ -121,6 +126,130 @@ namespace Tessera.Editor
             catch (System.Exception ex)
             {
                 Debug.LogError($"[Tessera] Failed to save file: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Build JSON model from table with simple 1:1 row-to-record mapping.
+        /// Each table row becomes one JSON object. No array grouping logic.
+        /// </summary>
+        private JsonModel BuildSimpleJsonFromTable(TableModel table, SchemaModel schema)
+        {
+            var records = new List<Dictionary<string, object?>>();
+            
+            foreach (var row in table.Rows)
+            {
+                var record = new Dictionary<string, object?>();
+                
+                for (int i = 0; i < table.Columns.Count && i < row.Cells.Count; i++)
+                {
+                    var colName = table.Columns[i].Name;
+                    var rawValue = row.Cells[i];
+                    var dataType = i < schema.Columns.Count ? schema.Columns[i].Type : DataType.String;
+                    
+                    // Convert value based on data type
+                    record[colName] = ConvertCellToJsonValue(rawValue, dataType);
+                }
+                
+                records.Add(record);
+            }
+            
+            return new JsonModel(records);
+        }
+        
+        /// <summary>
+        /// Convert a cell value to appropriate JSON type based on schema.
+        /// </summary>
+        private object? ConvertCellToJsonValue(string? value, DataType dataType)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+            
+            // First, check if value is a JSON array or object string (common for complex nested data)
+            var trimmed = value.Trim();
+            if (trimmed.StartsWith("[") || trimmed.StartsWith("{"))
+            {
+                try
+                {
+                    // Try to parse as JSON using System.Text.Json
+                    using var doc = System.Text.Json.JsonDocument.Parse(trimmed);
+                    return ConvertJsonElement(doc.RootElement);
+                }
+                catch
+                {
+                    // Not valid JSON, fall through to normal handling
+                }
+            }
+            
+            // Check for comma-separated JSON objects pattern: {x:1},{x:2},...
+            if (trimmed.Contains("},{") || (trimmed.StartsWith("{") && trimmed.EndsWith("}")))
+            {
+                try
+                {
+                    var arrayStr = trimmed.StartsWith("[") ? trimmed : "[" + trimmed + "]";
+                    using var doc = System.Text.Json.JsonDocument.Parse(arrayStr);
+                    return ConvertJsonElement(doc.RootElement);
+                }
+                catch
+                {
+                    // Not valid JSON, fall through
+                }
+            }
+            
+            switch (dataType)
+            {
+                case DataType.Int:
+                    if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longVal))
+                        return longVal;
+                    break;
+                case DataType.Float:
+                    if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleVal))
+                        return doubleVal;
+                    // Try European format (comma as decimal separator)
+                    if (value.Contains(',') && double.TryParse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleVal2))
+                        return doubleVal2;
+                    break;
+                case DataType.Bool:
+                    if (bool.TryParse(value, out var boolVal))
+                        return boolVal;
+                    break;
+            }
+            
+            // Default: return as string
+            return value;
+        }
+        
+        private object? ConvertJsonElement(System.Text.Json.JsonElement element)
+        {
+            switch (element.ValueKind)
+            {
+                case System.Text.Json.JsonValueKind.Object:
+                    var dict = new Dictionary<string, object?>();
+                    foreach (var prop in element.EnumerateObject())
+                    {
+                        dict[prop.Name] = ConvertJsonElement(prop.Value);
+                    }
+                    return dict;
+                case System.Text.Json.JsonValueKind.Array:
+                    var list = new List<object?>();
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        list.Add(ConvertJsonElement(item));
+                    }
+                    return list;
+                case System.Text.Json.JsonValueKind.String:
+                    return element.GetString();
+                case System.Text.Json.JsonValueKind.Number:
+                    if (element.TryGetInt64(out var l)) return l;
+                    return element.GetDouble();
+                case System.Text.Json.JsonValueKind.True:
+                    return true;
+                case System.Text.Json.JsonValueKind.False:
+                    return false;
+                case System.Text.Json.JsonValueKind.Null:
+                    return null;
+                default:
+                    return element.GetRawText();
             }
         }
         

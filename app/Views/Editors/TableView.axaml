@@ -33,12 +33,6 @@
   </UserControl.KeyBindings>
 
   <Grid Margin="24">
-    <Border Background="{DynamicResource SurfaceBrush}"
-            Padding="0" 
-            ClipToBounds="True" 
-            BorderBrush="{DynamicResource BorderBrushLight}" 
-            BorderThickness="1"
-            MinHeight="200">
       
       <!-- Use custom SpreadsheetGrid instead of DataGrid -->
       <controls:SpreadsheetGrid x:Name="GridControl">
@@ -110,6 +104,5 @@
           </ContextMenu>
         </controls:SpreadsheetGrid.ContextMenu>
       </controls:SpreadsheetGrid>
-    </Border>
   </Grid>
 </UserControl>

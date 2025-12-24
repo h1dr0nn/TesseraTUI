@@ -163,13 +163,11 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
 
 ### 🔧 **Phase 9 — Unity 6 Integration**
 
-**Status: In Progress** ✅
+**Status: Completed** ✅
 
 - [x] Convert Unified Data Core thành package dùng được trong Unity (.NET Standard 2.1).
 - [x] Build riêng module Rust (`Tessera.Native`) cho Unity:
   - [x] Windows `.dll`
-  - [ ] macOS `.dylib`
-  - [ ] Linux `.so`
 - [x] Tạo `/UnityTessera/package.json`.
 - [x] Unity EditorWindow với Table View cơ bản:
   - [x] Load CSV file
@@ -178,15 +176,32 @@ Modern cross-platform **CSV Editor** built with **Avalonia (.NET)**
   - [x] Save changes
   - [x] Schema View
   - [x] JSON View
-- [ ] Import CSV → ScriptableObject theo schema.
-- [ ] Validate CSV khi build.
-- [ ] Đồng bộ loại dữ liệu & schema từ editor sang runtime.
 - [x] Core integration với ValidationAgent, SchemaAgent, CsvAgent.
-
 
 ---
 
-### 🌐 **Phase 10 — Advanced Ecosystem & Pro Features**
+### 🛡️ **Phase 10 — Stability & Unity Integration Completion**
+
+**Status: In Progress** ✅
+
+**Bug Fixes & Improvements:**
+- [x] Fix: File JSON khi edit và save bị lưu thành CSV thay vì giữ nguyên format JSON.
+- [x] Fix: App đọc được file không hợp lệ (không phải CSV/JSON) → cần filter file type.
+- [x] Fix: Edit state không tắt khi click ra ngoài UI. (Unity)
+- [x] Fix: Border bo góc bị mất ở Table và Schema views. (Avalonia)
+
+**Remaining Unity Integration:**
+- [ ] Build module Rust cho các platform khác:
+  - [ ] macOS `.dylib`
+  - [ ] Linux `.so`
+- [ ] Import CSV → ScriptableObject theo schema.
+- [ ] Validate CSV khi build.
+- [ ] Đồng bộ loại dữ liệu & schema từ editor sang runtime.
+- [ ] Benchmark hiệu năng Rust vs C# thuần (từ Phase 8).
+
+---
+
+### 🌐 **Phase 11 — Advanced Ecosystem & Pro Features**
 
 **Status: Pending**
 
